@@ -5,6 +5,7 @@ class WavefrontComponent {
 		this.W = []; // wavefront diag distance for each wavefront
 		this.A = []; // compact CIGAR for backtrace
 	}
+
 	// get value for wavefront=score, diag=k
 	get_val (score, k) {
 		if (this.W[score] !== undefined && this.W[score][k] !== undefined) {
@@ -14,6 +15,7 @@ class WavefrontComponent {
 			return NaN;
 		}
 	}
+
 	// set value for wavefront=score, diag=k
 	set_val (score, k, val) {
 		if (this.W[score]) {
@@ -24,7 +26,8 @@ class WavefrontComponent {
 			this.W[score][k] = val;
 		}
 	}
-	// get alignment traceback 
+
+	// get alignment traceback
 	get_traceback (score, k) {
 		if (this.A[score] !== undefined && this.A[score][k] !== undefined) {
 			return this.A[score][k];
@@ -33,6 +36,7 @@ class WavefrontComponent {
 			return undefined;
 		}
 	}
+
 	// set alignment traceback
 	set_traceback (score, k, traceback) {
 		if (this.A[score]) {
@@ -43,24 +47,29 @@ class WavefrontComponent {
 			this.A[score][k] = traceback;
 		}
 	}
+
 	// get hi for wavefront=score
 	get_hi (score) {
 		const hi = this.hi[score];
 		return isNaN(hi) ? 0 : hi;
 	}
+
 	// set hi for wavefront=score
 	set_hi (score, hi) {
 		this.hi[score] = hi;
 	}
+
 	// get lo for wavefront=score
 	get_lo (score) {
 		const lo = this.lo[score];
 		return isNaN(lo) ? 0 : lo;
 	}
+
 	// set lo for wavefront=score
 	set_lo (score, lo) {
 		this.lo[score] = lo;
 	}
+
 	// string representation of all wavefronts
 	toString () {
 		const traceback_str = ["OI", "EI", "OD", "ED", "SB", "IN", "DL", "EN"];
@@ -85,7 +94,7 @@ class WavefrontComponent {
 				s += "|";
 			}
 		}
-		s += ">\t<"
+		s += ">\t<";
 		for (let k = min_lo; k <= max_hi; k++) {
 			s += FormatNumberLength(k, 2);
 			if (k < max_hi) {
@@ -143,8 +152,8 @@ const traceback = {
 	Sub: 4,
 	Ins: 5,
 	Del: 6,
-	End: 7,
-}
+	End: 7
+};
 
 function FormatNumberLength (num, length) {
 	let r = "" + num;
@@ -170,13 +179,8 @@ function max (args) {
 	return max === -Infinity ? NaN : max;
 }
 
-function argmin (args) {
-	const val = min(args)
-	return args.indexOf(val);
-}
-
 function argmax (args) {
-	const val = max(args)
+	const val = max(args);
 	return args.indexOf(val);
 }
 
@@ -190,7 +194,7 @@ export default function wf_align (s1, s2, penalties) {
 	M.set_val(0, 0, 0);
 	M.set_hi(0, 0);
 	M.set_lo(0, 0);
-	M.set_traceback(0, 0, traceback.End)
+	M.set_traceback(0, 0, traceback.End);
 	const I = new WavefrontComponent();
 	const D = new WavefrontComponent();
 	while (true) {
@@ -244,7 +248,7 @@ function wf_next (M, I, D, score, penalties) {
 		I.set_traceback(score, k, [traceback.OpenIns, traceback.ExtdIns][argmax([
 			M.get_val(score - o - e, k - 1),
 			I.get_val(score - e, k - 1)
-		])])
+		])]);
 		D.set_val(score, k, max([
 			M.get_val(score - o - e, k + 1),
 			D.get_val(score - e, k + 1)
@@ -252,7 +256,7 @@ function wf_next (M, I, D, score, penalties) {
 		D.set_traceback(score, k, [traceback.OpenDel, traceback.ExtdDel][argmax([
 			M.get_val(score - o - e, k + 1),
 			D.get_val(score - e, k + 1)
-		])])
+		])]);
 		M.set_val(score, k, max([
 			M.get_val(score - x, k) + 1,
 			I.get_val(score, k),
@@ -279,46 +283,46 @@ function wf_backtrace (M, I, D, score, penalties, A_k) {
 	while (!done) {
 		CIGAR_rev += traceback_CIGAR[current_traceback];
 		switch (current_traceback) {
-			case traceback.OpenIns:
-				tb_s = tb_s - o - e;
-				tb_k = tb_k - 1;
-				current_traceback = M.get_traceback(tb_s, tb_k);
-				break;
-			case traceback.ExtdIns:
-				tb_s = tb_s - e;
-				tb_k = tb_k - 1;
-				current_traceback = I.get_traceback(tb_s, tb_k);
-				break;
-			case traceback.OpenDel:
-				tb_s = tb_s - o - e;
-				tb_k = tb_k + 1;
-				current_traceback = M.get_traceback(tb_s, tb_k);
-				break;
-			case traceback.ExtdDel:
-				tb_s = tb_s - e;
-				tb_k = tb_k + 1;
-				current_traceback = D.get_traceback(tb_s, tb_k);
-				break;
-			case traceback.Sub:
-				tb_s = tb_s - x;
-				tb_k = tb_k;
-				current_traceback = M.get_traceback(tb_s, tb_k);
-				break;
-			case traceback.Ins:
-				tb_s = tb_s;
-				tb_k = tb_k;
-				current_traceback = I.get_traceback(tb_s, tb_k);
-				break;
-			case traceback.Del:
-				tb_s = tb_s;
-				tb_k = tb_k;
-				current_traceback = D.get_traceback(tb_s, tb_k)
-				break;
-			case traceback.End:
-				done = true
-				break;
+		case traceback.OpenIns:
+			tb_s = tb_s - o - e;
+			tb_k = tb_k - 1;
+			current_traceback = M.get_traceback(tb_s, tb_k);
+			break;
+		case traceback.ExtdIns:
+			tb_s = tb_s - e;
+			tb_k = tb_k - 1;
+			current_traceback = I.get_traceback(tb_s, tb_k);
+			break;
+		case traceback.OpenDel:
+			tb_s = tb_s - o - e;
+			tb_k = tb_k + 1;
+			current_traceback = M.get_traceback(tb_s, tb_k);
+			break;
+		case traceback.ExtdDel:
+			tb_s = tb_s - e;
+			tb_k = tb_k + 1;
+			current_traceback = D.get_traceback(tb_s, tb_k);
+			break;
+		case traceback.Sub:
+			tb_s = tb_s - x;
+			// tb_k = tb_k;
+			current_traceback = M.get_traceback(tb_s, tb_k);
+			break;
+		case traceback.Ins:
+			// tb_s = tb_s;
+			// tb_k = tb_k;
+			current_traceback = I.get_traceback(tb_s, tb_k);
+			break;
+		case traceback.Del:
+			// tb_s = tb_s;
+			// tb_k = tb_k;
+			current_traceback = D.get_traceback(tb_s, tb_k);
+			break;
+		case traceback.End:
+			done = true;
+			break;
 		}
 	}
 	const CIGAR = Array.from(CIGAR_rev).reverse().join("");
-	return {CIGAR, score};
+	return { CIGAR, score };
 }

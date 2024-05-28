@@ -1,0 +1,29 @@
+{
+    "p0": {
+        "penalties": {
+            "m": 0,
+            "x": 1,
+            "o": 2,
+            "e": 1
+        },
+        "solutions": "./tests/test_affine_p0_sol"
+    },
+    "p1": {
+        "penalties": {
+            "m": 0,
+            "x": 3,
+            "o": 1,
+            "e": 4
+        },
+        "solutions": "./tests/test_affine_p1_sol"
+    },
+    "p2": {
+        "penalties": {
+            "m": 0,
+            "x": 5,
+            "o": 3,
+            "e": 2
+        },
+        "solutions": "./tests/test_affine_p2_sol"
+    }
+}
