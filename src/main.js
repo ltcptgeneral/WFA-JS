@@ -5,7 +5,7 @@ import ProgressBar from "progress";
 let data = fs.readFileSync("./tests/tests.json");
 data = JSON.parse(data);
 const sequences = fs.readFileSync("./tests/sequences").toString().split("\n");
-//const total = sequences.length;
+// const total = sequences.length;
 const total = 500; // skip the later tests because of memory usage
 
 for (const test_name of Object.keys(data)) {
