@@ -14,7 +14,7 @@
 	},
 	"scripts": {
 		"test": "node tests/test.js",
-		"lint": "DEBUG=eslint:cli-engine eslint --fix .",
+		"lint": "DEBUG=eslint:cli-engine eslint --fix src/*.js tests/*.js",
 		"minify": "sed -ze 's/\\t//g; s/\\/\\/[[:print:]]*//g;s/\\n//g;' src/wfa.js > dist/wfa.js"
 	}
 }
