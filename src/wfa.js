@@ -7,7 +7,7 @@ class WavefrontComponent {
 	}
 
 	// get value for wavefront=score, diag=k
-	get_val (score, k) {
+	getVal (score, k) {
 		if (this.W[score] !== undefined && this.W[score][k] !== undefined) {
 			return this.W[score][k];
 		}
@@ -17,7 +17,7 @@ class WavefrontComponent {
 	}
 
 	// set value for wavefront=score, diag=k
-	set_val (score, k, val) {
+	setVal (score, k, val) {
 		if (this.W[score]) {
 			this.W[score][k] = val;
 		}
@@ -28,7 +28,7 @@ class WavefrontComponent {
 	}
 
 	// get alignment traceback
-	get_traceback (score, k) {
+	getTraceback (score, k) {
 		if (this.A[score] !== undefined && this.A[score][k] !== undefined) {
 			return this.A[score][k];
 		}
@@ -38,7 +38,7 @@ class WavefrontComponent {
 	}
 
 	// set alignment traceback
-	set_traceback (score, k, traceback) {
+	setTraceback (score, k, traceback) {
 		if (this.A[score]) {
 			this.A[score][k] = traceback;
 		}
@@ -49,24 +49,24 @@ class WavefrontComponent {
 	}
 
 	// get hi for wavefront=score
-	get_hi (score) {
+	getHi (score) {
 		const hi = this.hi[score];
 		return isNaN(hi) ? 0 : hi;
 	}
 
 	// set hi for wavefront=score
-	set_hi (score, hi) {
+	setHi (score, hi) {
 		this.hi[score] = hi;
 	}
 
 	// get lo for wavefront=score
-	get_lo (score) {
+	getLo (score) {
 		const lo = this.lo[score];
 		return isNaN(lo) ? 0 : lo;
 	}
 
 	// set lo for wavefront=score
-	set_lo (score, lo) {
+	setLo (score, lo) {
 		this.lo[score] = lo;
 	}
 
@@ -184,41 +184,45 @@ function argmax (args) {
 	return args.indexOf(val);
 }
 
-export default function wf_align (s1, s2, penalties) {
+export default function wfAlign (s1, s2, penalties, doCIGAR = false) {
 	const n = s1.length;
 	const m = s2.length;
 	const A_k = m - n;
 	const A_offset = m;
 	let score = 0;
 	const M = new WavefrontComponent();
-	M.set_val(0, 0, 0);
-	M.set_hi(0, 0);
-	M.set_lo(0, 0);
-	M.set_traceback(0, 0, traceback.End);
+	M.setVal(0, 0, 0);
+	M.setHi(0, 0);
+	M.setLo(0, 0);
+	M.setTraceback(0, 0, traceback.End);
 	const I = new WavefrontComponent();
 	const D = new WavefrontComponent();
 	while (true) {
-		wf_extend(M, s1, n, s2, m, score);
-		if (M.get_val(score, A_k) >= A_offset) {
+		wfExtend(M, s1, n, s2, m, score);
+		if (M.getVal(score, A_k) >= A_offset) {
 			break;
 		}
 		score++;
-		wf_next(M, I, D, score, penalties);
+		wfNext(M, I, D, score, penalties);
 	}
-	return wf_backtrace(M, I, D, score, penalties, A_k, A_offset);
+	let CIGAR = null;
+	if (doCIGAR) {
+		CIGAR = wfBacktrace(M, I, D, score, penalties, A_k, A_offset);
+	}
+	return { score, CIGAR };
 }
 
-function wf_extend (M, s1, n, s2, m, score) {
-	const lo = M.get_lo(score);
-	const hi = M.get_hi(score);
+function wfExtend (M, s1, n, s2, m, score) {
+	const lo = M.getLo(score);
+	const hi = M.getHi(score);
 	for (let k = lo; k <= hi; k++) {
-		let v = M.get_val(score, k) - k;
-		let h = M.get_val(score, k);
+		let v = M.getVal(score, k) - k;
+		let h = M.getVal(score, k);
 		if (isNaN(v) || isNaN(h)) {
 			continue;
 		}
 		while (s1[v] === s2[h]) {
-			M.set_val(score, k, M.get_val(score, k) + 1);
+			M.setVal(score, k, M.getVal(score, k) + 1);
 			v++;
 			h++;
 			if (v > n || h > m) {
@@ -228,49 +232,49 @@ function wf_extend (M, s1, n, s2, m, score) {
 	}
 }
 
-function wf_next (M, I, D, score, penalties) {
+function wfNext (M, I, D, score, penalties, do_traceback) {
 	const x = penalties.x;
 	const o = penalties.o;
 	const e = penalties.e;
-	const lo = min([M.get_lo(score - x), M.get_lo(score - o - e), I.get_lo(score - e), D.get_lo(score - e)]) - 1;
-	const hi = max([M.get_hi(score - x), M.get_hi(score - o - e), I.get_hi(score - e), D.get_hi(score - e)]) + 1;
-	M.set_hi(score, hi);
-	I.set_hi(score, hi);
-	D.set_hi(score, hi);
-	M.set_lo(score, lo);
-	I.set_lo(score, lo);
-	D.set_lo(score, lo);
+	const lo = min([M.getLo(score - x), M.getLo(score - o - e), I.getLo(score - e), D.getLo(score - e)]) - 1;
+	const hi = max([M.getHi(score - x), M.getHi(score - o - e), I.getHi(score - e), D.getHi(score - e)]) + 1;
+	M.setHi(score, hi);
+	I.setHi(score, hi);
+	D.setHi(score, hi);
+	M.setLo(score, lo);
+	I.setLo(score, lo);
+	D.setLo(score, lo);
 	for (let k = lo; k <= hi; k++) {
-		I.set_val(score, k, max([
-			M.get_val(score - o - e, k - 1),
-			I.get_val(score - e, k - 1)
+		I.setVal(score, k, max([
+			M.getVal(score - o - e, k - 1),
+			I.getVal(score - e, k - 1)
 		]) + 1);
-		I.set_traceback(score, k, [traceback.OpenIns, traceback.ExtdIns][argmax([
-			M.get_val(score - o - e, k - 1),
-			I.get_val(score - e, k - 1)
+		I.setTraceback(score, k, [traceback.OpenIns, traceback.ExtdIns][argmax([
+			M.getVal(score - o - e, k - 1),
+			I.getVal(score - e, k - 1)
 		])]);
-		D.set_val(score, k, max([
-			M.get_val(score - o - e, k + 1),
-			D.get_val(score - e, k + 1)
+		D.setVal(score, k, max([
+			M.getVal(score - o - e, k + 1),
+			D.getVal(score - e, k + 1)
 		]));
-		D.set_traceback(score, k, [traceback.OpenDel, traceback.ExtdDel][argmax([
-			M.get_val(score - o - e, k + 1),
-			D.get_val(score - e, k + 1)
+		D.setTraceback(score, k, [traceback.OpenDel, traceback.ExtdDel][argmax([
+			M.getVal(score - o - e, k + 1),
+			D.getVal(score - e, k + 1)
 		])]);
-		M.set_val(score, k, max([
-			M.get_val(score - x, k) + 1,
-			I.get_val(score, k),
-			D.get_val(score, k)
+		M.setVal(score, k, max([
+			M.getVal(score - x, k) + 1,
+			I.getVal(score, k),
+			D.getVal(score, k)
 		]));
-		M.set_traceback(score, k, [traceback.Sub, traceback.Ins, traceback.Del][argmax([
-			M.get_val(score - x, k) + 1,
-			I.get_val(score, k),
-			D.get_val(score, k)
+		M.setTraceback(score, k, [traceback.Sub, traceback.Ins, traceback.Del][argmax([
+			M.getVal(score - x, k) + 1,
+			I.getVal(score, k),
+			D.getVal(score, k)
 		])]);
 	}
 }
 
-function wf_backtrace (M, I, D, score, penalties, A_k) {
+function wfBacktrace (M, I, D, score, penalties, A_k) {
 	const traceback_CIGAR = ["I", "I", "D", "D", "X", "", "", ""];
 	const x = penalties.x;
 	const o = penalties.o;
@@ -278,7 +282,7 @@ function wf_backtrace (M, I, D, score, penalties, A_k) {
 	let CIGAR_rev = ""; // reversed CIGAR
 	let tb_s = score; // traceback score
 	let tb_k = A_k; // traceback diag k
-	let current_traceback = M.get_traceback(tb_s, tb_k);
+	let current_traceback = M.getTraceback(tb_s, tb_k);
 	let done = false;
 	while (!done) {
 		CIGAR_rev += traceback_CIGAR[current_traceback];
@@ -286,43 +290,42 @@ function wf_backtrace (M, I, D, score, penalties, A_k) {
 		case traceback.OpenIns:
 			tb_s = tb_s - o - e;
 			tb_k = tb_k - 1;
-			current_traceback = M.get_traceback(tb_s, tb_k);
+			current_traceback = M.getTraceback(tb_s, tb_k);
 			break;
 		case traceback.ExtdIns:
 			tb_s = tb_s - e;
 			tb_k = tb_k - 1;
-			current_traceback = I.get_traceback(tb_s, tb_k);
+			current_traceback = I.getTraceback(tb_s, tb_k);
 			break;
 		case traceback.OpenDel:
 			tb_s = tb_s - o - e;
 			tb_k = tb_k + 1;
-			current_traceback = M.get_traceback(tb_s, tb_k);
+			current_traceback = M.getTraceback(tb_s, tb_k);
 			break;
 		case traceback.ExtdDel:
 			tb_s = tb_s - e;
 			tb_k = tb_k + 1;
-			current_traceback = D.get_traceback(tb_s, tb_k);
+			current_traceback = D.getTraceback(tb_s, tb_k);
 			break;
 		case traceback.Sub:
 			tb_s = tb_s - x;
 			// tb_k = tb_k;
-			current_traceback = M.get_traceback(tb_s, tb_k);
+			current_traceback = M.getTraceback(tb_s, tb_k);
 			break;
 		case traceback.Ins:
 			// tb_s = tb_s;
 			// tb_k = tb_k;
-			current_traceback = I.get_traceback(tb_s, tb_k);
+			current_traceback = I.getTraceback(tb_s, tb_k);
 			break;
 		case traceback.Del:
 			// tb_s = tb_s;
 			// tb_k = tb_k;
-			current_traceback = D.get_traceback(tb_s, tb_k);
+			current_traceback = D.getTraceback(tb_s, tb_k);
 			break;
 		case traceback.End:
 			done = true;
 			break;
 		}
 	}
-	const CIGAR = Array.from(CIGAR_rev).reverse().join("");
-	return { CIGAR, score };
+	return Array.from(CIGAR_rev).reverse().join("");
 }

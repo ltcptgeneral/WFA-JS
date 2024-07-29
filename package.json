@@ -2,7 +2,7 @@
 	"name": "wfa-js",
 	"version": "0.0.1",
 	"description": "Wavefront alignment algorithm in JS",
-	"main": "src/main.js",
+	"main": "tests/test.js",
 	"type": "module",
 	"devDependencies": {
 		"eslint": "^8.43.0",
@@ -13,6 +13,8 @@
 		"progress": "^2.0.3"
 	},
 	"scripts": {
-		"lint": "DEBUG=eslint:cli-engine eslint --fix ."
+		"test": "node tests/test.js",
+		"lint": "DEBUG=eslint:cli-engine eslint --fix .",
+		"minify": "sed -ze 's/\\t//g; s/\\/\\/[[:print:]]*//g;s/\\n//g;' src/wfa.js > dist/wfa.js"
 	}
 }
