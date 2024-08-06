@@ -1,6 +1,6 @@
 {
 	"name": "wfa-js",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"description": "Wavefront alignment algorithm in JS",
 	"main": "tests/test.js",
 	"type": "module",
