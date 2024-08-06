@@ -207,7 +207,7 @@ export default function wfAlign (s1, s2, penalties, doCIGAR = false) {
 	}
 	let CIGAR = null;
 	if (doCIGAR) {
-		CIGAR = wfBacktrace(M, I, D, score, penalties, A_k, A_offset);
+		CIGAR = wfBacktrace(M, I, D, score, penalties, A_k, s1, s2);
 	}
 	return { score, CIGAR };
 }
@@ -274,7 +274,7 @@ function wfNext (M, I, D, score, penalties, do_traceback) {
 	}
 }
 
-function wfBacktrace (M, I, D, score, penalties, A_k) {
+function wfBacktrace (M, I, D, score, penalties, A_k, s1, s2) {
 	const traceback_CIGAR = ["I", "I", "D", "D", "X", "", "", ""];
 	const x = penalties.x;
 	const o = penalties.o;
@@ -327,5 +327,30 @@ function wfBacktrace (M, I, D, score, penalties, A_k) {
 			break;
 		}
 	}
-	return Array.from(CIGAR_rev).reverse().join("");
+	const CIGAR_part = Array.from(CIGAR_rev).reverse(); // still missing Match positions
+	let c = 0;
+	let i = 0;
+	let j = 0;
+	while (i < s1.length && j < s2.length) { // iterate through the strings to back-solve match positions
+		if (s1[i] === s2[j]) { // match, insert M and then increment c, i, j
+			CIGAR_part.splice(c, 0, "M");
+			c++;
+			i++;
+			j++;
+		}
+		else if (CIGAR_part[c] === "X") { // mismatch, increment c, i, j
+			c++;
+			i++;
+			j++;
+		}
+		else if (CIGAR_part[c] === "I") { // insertion of character to s1 to reach s2, increment c,j
+			c++;
+			j++;
+		}
+		else if (CIGAR_part[c] === "D") { // deletion of character from s1 to reach s2, increment c,i
+			c++;
+			i++;
+		}
+	}
+	return CIGAR_part.join("");
 }

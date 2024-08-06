@@ -1,4 +1,4 @@
-import wf_align from "../src/wfa.js";
+import wfAlign from "../src/wfa.js";
 import fs from "fs";
 import ProgressBar from "progress";
 
@@ -21,7 +21,7 @@ for (const test_name of Object.keys(data)) {
 		const s1 = sequences[i].replace(">");
 		const s2 = sequences[i + 1].replace("<");
 		const start = process.hrtime()[1];
-		const { score } = wf_align(s1, s2, penalties, false);
+		const { score } = wfAlign(s1, s2, penalties, false);
 		const elapsed = process.hrtime()[1] - start;
 		timePerChar.push((elapsed / 1e9) / (s1.length + s2.length));
 		const solution_score = Number(solutions[j].split("\t")[0]);
