@@ -6,7 +6,7 @@
             "o": 2,
             "e": 1
         },
-        "solutions": "./tests/test_affine_p0_sol"
+        "solutions": "test_affine_p0_sol"
     },
     "p1": {
         "penalties": {
@@ -15,7 +15,7 @@
             "o": 1,
             "e": 4
         },
-        "solutions": "./tests/test_affine_p1_sol"
+        "solutions": "test_affine_p1_sol"
     },
     "p2": {
         "penalties": {
@@ -24,6 +24,6 @@
             "o": 3,
             "e": 2
         },
-        "solutions": "./tests/test_affine_p2_sol"
+        "solutions": "test_affine_p2_sol"
     }
 }
