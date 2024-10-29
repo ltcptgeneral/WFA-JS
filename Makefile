@@ -2,12 +2,13 @@
 
 build: clean
 	@echo "======================== Building Binary ======================="
+	minify wfa.js > dist/wfa.js
 	GOOS=js GOARCH=wasm CGO_ENABLED=0 tinygo build -no-debug -opt=2 -target=wasm -o dist/wfa.wasm .
 
 clean:
 	@echo "======================== Cleaning Project ======================"
 	go clean
-	rm -f dist/wfa.wasm cover.prof cpu.prof mem.prof test.test
+	rm -f dist/wfa.wasm dist/wfa.js cover.prof cpu.prof mem.prof test.test
 
 test:
 	@echo "======================== Running Tests ========================="
