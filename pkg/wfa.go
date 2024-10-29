@@ -6,13 +6,13 @@ func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 	A_k := m - n
 	A_offset := m
 	score := 0
-	M := NewWavefrontComponent()
+	estimatedScore := (max(n, m) * max(penalties.M, penalties.X, penalties.O, penalties.E)) / 4
+	M := NewWavefrontComponent(estimatedScore)
+	M.SetLoHi(0, 0, 0)
 	M.SetVal(0, 0, 0)
-	M.SetHi(0, 0)
-	M.SetLo(0, 0)
 	M.SetTraceback(0, 0, End)
-	I := NewWavefrontComponent()
-	D := NewWavefrontComponent()
+	I := NewWavefrontComponent(estimatedScore)
+	D := NewWavefrontComponent(estimatedScore)
 
 	for {
 		WFExtend(M, s1, n, s2, m, score)
@@ -36,8 +36,7 @@ func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 }
 
 func WFExtend(M WavefrontComponent, s1 string, n int, s2 string, m int, score int) {
-	_, lo := M.GetLo(score)
-	_, hi := M.GetHi(score)
+	_, lo, hi := M.GetLoHi(score)
 	for k := lo; k <= hi; k++ {
 		// v = M[score][k] - k
 		// h = M[score][k]
@@ -58,11 +57,8 @@ func WFExtend(M WavefrontComponent, s1 string, n int, s2 string, m int, score in
 }
 
 func WFNext(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, penalties Penalty) {
-	// get this score's lo
-	lo := NextLo(M, I, D, score, penalties)
-
-	// get this score's hi
-	hi := NextHi(M, I, D, score, penalties)
+	// get this score's lo, hi
+	lo, hi := NextLoHi(M, I, D, score, penalties)
 
 	for k := lo; k <= hi; k++ {
 		NextI(M, I, score, k, penalties)

@@ -16,16 +16,12 @@ func (a *IntegerSlice[T]) TranslateIndex(idx int) int {
 
 func (a *IntegerSlice[T]) Valid(idx int) bool {
 	actualIdx := a.TranslateIndex(idx)
-	if actualIdx < len(a.valid) { // idx is in the slice
-		return a.valid[actualIdx]
-	} else { // idx is out of the slice
-		return false
-	}
+	return 0 <= actualIdx && actualIdx < len(a.valid) && a.valid[actualIdx]
 }
 
 func (a *IntegerSlice[T]) Get(idx int) T {
 	actualIdx := a.TranslateIndex(idx)
-	if actualIdx < len(a.valid) { // idx is in the slice
+	if 0 <= actualIdx && actualIdx < len(a.valid) && a.valid[actualIdx] { // idx is in the slice
 		return a.data[actualIdx]
 	} else { // idx is out of the slice
 		return a.defaultValue
@@ -36,18 +32,32 @@ func (a *IntegerSlice[T]) Set(idx int, value T) {
 	actualIdx := a.TranslateIndex(idx)
 	if actualIdx >= len(a.valid) { // idx is outside the slice
 		// expand data array to actualIdx
-		newData := make([]T, actualIdx+1)
+		newData := make([]T, 2*actualIdx+1)
 		copy(newData, a.data)
 		a.data = newData
 
 		// expand valid array to actualIdx
-		newValid := make([]bool, actualIdx+1)
+		newValid := make([]bool, 2*actualIdx+1)
 		copy(newValid, a.valid)
 		a.valid = newValid
 	}
 
 	a.data[actualIdx] = value
 	a.valid[actualIdx] = true
+}
+
+func (a *IntegerSlice[T]) Preallocate(lo int, hi int) {
+	actualLo := a.TranslateIndex(lo)
+	actualHi := a.TranslateIndex(hi)
+	size := max(actualHi, actualLo)
+
+	// expand data array to actualIdx
+	newData := make([]T, size+1)
+	a.data = newData
+
+	// expand valid array to actualIdx
+	newValid := make([]bool, size+1)
+	a.valid = newValid
 }
 
 type PositiveSlice[T any] struct {
@@ -62,16 +72,12 @@ func (a *PositiveSlice[T]) TranslateIndex(idx int) int {
 
 func (a *PositiveSlice[T]) Valid(idx int) bool {
 	actualIdx := a.TranslateIndex(idx)
-	if actualIdx >= 0 && actualIdx < len(a.valid) { // idx is in the slice
-		return a.valid[actualIdx]
-	} else { // idx is out of the slice
-		return false
-	}
+	return 0 <= actualIdx && actualIdx < len(a.valid) && a.valid[actualIdx]
 }
 
 func (a *PositiveSlice[T]) Get(idx int) T {
 	actualIdx := a.TranslateIndex(idx)
-	if actualIdx >= 0 && actualIdx < len(a.valid) { // idx is in the slice
+	if 0 <= actualIdx && actualIdx < len(a.valid) && a.valid[actualIdx] { // idx is in the slice
 		return a.data[actualIdx]
 	} else { // idx is out of the slice
 		return a.defaultValue
@@ -82,16 +88,28 @@ func (a *PositiveSlice[T]) Set(idx int, value T) {
 	actualIdx := a.TranslateIndex(idx)
 	if actualIdx < 0 || actualIdx >= len(a.valid) { // idx is outside the slice
 		// expand data array to actualIdx
-		newData := make([]T, actualIdx+1)
+		newData := make([]T, 2*actualIdx+1)
 		copy(newData, a.data)
 		a.data = newData
 
 		// expand valid array to actualIdx
-		newValid := make([]bool, actualIdx+1)
+		newValid := make([]bool, 2*actualIdx+1)
 		copy(newValid, a.valid)
 		a.valid = newValid
 	}
 
 	a.data[actualIdx] = value
 	a.valid[actualIdx] = true
+}
+
+func (a *PositiveSlice[T]) Preallocate(hi int) {
+	size := hi
+
+	// expand data array to actualIdx
+	newData := make([]T, size+1)
+	a.data = newData
+
+	// expand valid array to actualIdx
+	newValid := make([]bool, size+1)
+	a.valid = newValid
 }

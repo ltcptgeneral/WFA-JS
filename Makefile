@@ -7,11 +7,19 @@ build: clean
 clean:
 	@echo "======================== Cleaning Project ======================"
 	go clean
-	rm -f dist/wfa.wasm
+	rm -f dist/wfa.wasm cover.prof cpu.prof mem.prof test.test
 
 test:
 	@echo "======================== Running Tests ========================="
-	go test -v -cover -coverpkg=./pkg/ -coverprofile coverage ./test/
+	go test -v -cover -coverpkg=./pkg/ -coverprofile cover.prof -cpuprofile cpu.prof -memprofile mem.prof ./test/
 	@echo "======================= Coverage Report ========================"
-	go tool cover -func=coverage
-	@rm -f coverage
+	go tool cover -func=cover.prof
+	@rm -f cover.prof
+	@echo "==================== CPU Performance Report ===================="
+	go tool pprof -top cpu.prof
+	@rm -f cpu.prof
+	@echo "=================== Memory Performance Report =================="
+	go tool pprof -top mem.prof
+	@rm -f mem.prof
+
+	@rm -f test.test

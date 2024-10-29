@@ -5,14 +5,12 @@ import (
 	"unicode/utf8"
 )
 
-func SafeMin(valids []bool, values []int) (bool, int) {
-	ok, idx := SafeArgMin(valids, values)
-	return ok, values[idx]
+func SafeMin(values []int, idx int) int {
+	return values[idx]
 }
 
-func SafeMax(valids []bool, values []int) (bool, int) {
-	ok, idx := SafeArgMax(valids, values)
-	return ok, values[idx]
+func SafeMax(values []int, idx int) int {
+	return values[idx]
 }
 
 func SafeArgMax(valids []bool, values []int) (bool, int) {
@@ -66,50 +64,34 @@ func Splice(s string, c rune, idx int) string {
 	return s[:idx] + string(c) + s[idx:]
 }
 
-func NextLo(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, penalties Penalty) int {
+func NextLoHi(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, penalties Penalty) (int, int) {
 	x := penalties.X
 	o := penalties.O
 	e := penalties.E
 
-	a_ok, a := M.GetLo(score - x)
-	b_ok, b := M.GetLo(score - o - e)
-	c_ok, c := I.GetLo(score - e)
-	d_ok, d := D.GetLo(score - e)
+	a_ok, a_lo, a_hi := M.GetLoHi(score - x)
+	b_ok, b_lo, b_hi := M.GetLoHi(score - o - e)
+	c_ok, c_lo, c_hi := I.GetLoHi(score - e)
+	d_ok, d_lo, d_hi := D.GetLoHi(score - e)
 
-	ok, lo := SafeMin(
+	ok_lo, idx := SafeArgMin(
 		[]bool{a_ok, b_ok, c_ok, d_ok},
-		[]int{a, b, c, d},
+		[]int{a_lo, b_lo, c_lo, d_lo},
 	)
-	lo--
-	if ok {
-		M.SetLo(score, lo)
-		I.SetLo(score, lo)
-		D.SetLo(score, lo)
-	}
-	return lo
-}
+	lo := SafeMin([]int{a_lo, b_lo, c_lo, d_lo}, idx) - 1
 
-func NextHi(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, penalties Penalty) int {
-	x := penalties.X
-	o := penalties.O
-	e := penalties.E
-
-	a_ok, a := M.GetHi(score - x)
-	b_ok, b := M.GetHi(score - o - e)
-	c_ok, c := I.GetHi(score - e)
-	d_ok, d := D.GetHi(score - e)
-
-	ok, hi := SafeMax(
+	ok_hi, idx := SafeArgMax(
 		[]bool{a_ok, b_ok, c_ok, d_ok},
-		[]int{a, b, c, d},
+		[]int{a_hi, b_hi, c_hi, d_hi},
 	)
-	hi++
-	if ok {
-		M.SetHi(score, hi)
-		I.SetHi(score, hi)
-		D.SetHi(score, hi)
+	hi := SafeMax([]int{a_hi, b_hi, c_hi, d_hi}, idx) + 1
+
+	if ok_lo && ok_hi {
+		M.SetLoHi(score, lo, hi)
+		I.SetLoHi(score, lo, hi)
+		D.SetLoHi(score, lo, hi)
 	}
-	return hi
+	return lo, hi
 }
 
 func NextI(M WavefrontComponent, I WavefrontComponent, score int, k int, penalties Penalty) {
@@ -119,13 +101,10 @@ func NextI(M WavefrontComponent, I WavefrontComponent, score int, k int, penalti
 	a_ok, a := M.GetVal(score-o-e, k-1)
 	b_ok, b := I.GetVal(score-e, k-1)
 
-	ok, nextIVal := SafeMax([]bool{a_ok, b_ok}, []int{a, b})
-	if ok {
-		I.SetVal(score, k, nextIVal+1) // important that the +1 is here
-	}
-
 	ok, nextITraceback := SafeArgMax([]bool{a_ok, b_ok}, []int{a, b})
+	nextIVal := SafeMax([]int{a, b}, nextITraceback) + 1 // important that the +1 is here
 	if ok {
+		I.SetVal(score, k, nextIVal)
 		I.SetTraceback(score, k, []traceback{OpenIns, ExtdIns}[nextITraceback])
 	}
 }
@@ -137,13 +116,13 @@ func NextD(M WavefrontComponent, D WavefrontComponent, score int, k int, penalti
 	a_ok, a := M.GetVal(score-o-e, k+1)
 	b_ok, b := D.GetVal(score-e, k+1)
 
-	ok, nextDVal := SafeMax([]bool{a_ok, b_ok}, []int{a, b})
+	ok, nextDTraceback := SafeArgMax(
+		[]bool{a_ok, b_ok},
+		[]int{a, b},
+	)
+	nextDVal := SafeMax([]int{a, b}, nextDTraceback) // nothing special
 	if ok {
-		D.SetVal(score, k, nextDVal) // nothing special
-	}
-
-	ok, nextDTraceback := SafeArgMax([]bool{a_ok, b_ok}, []int{a, b})
-	if ok {
+		D.SetVal(score, k, nextDVal)
 		D.SetTraceback(score, k, []traceback{OpenDel, ExtdDel}[nextDTraceback])
 	}
 }
@@ -156,13 +135,11 @@ func NextM(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, sco
 	b_ok, b := I.GetVal(score, k)
 	c_ok, c := D.GetVal(score, k)
 
-	ok, nextMVal := SafeMax([]bool{a_ok, b_ok, c_ok}, []int{a, b, c})
+	ok, nextMTraceback := SafeArgMax([]bool{a_ok, b_ok, c_ok}, []int{a, b, c})
+	nextMVal := SafeMax([]int{a, b, c}, nextMTraceback)
+
 	if ok {
 		M.SetVal(score, k, nextMVal)
-	}
-
-	ok, nextMTraceback := SafeArgMax([]bool{a_ok, b_ok, c_ok}, []int{a, b, c})
-	if ok {
 		M.SetTraceback(score, k, []traceback{Sub, Ins, Del}[nextMTraceback])
 	}
 }

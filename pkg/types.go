@@ -5,6 +5,11 @@ import (
 	"math"
 )
 
+type Result struct {
+	Score int
+	CIGAR string
+}
+
 type Penalty struct {
 	M int
 	X int
@@ -32,14 +37,14 @@ type WavefrontComponent struct {
 	A  *PositiveSlice[*IntegerSlice[traceback]] // compact CIGAR for backtrace for each wavefront
 }
 
-func NewWavefrontComponent() WavefrontComponent {
+func NewWavefrontComponent(preallocateSize int) WavefrontComponent {
 	// new wavefront component = {
 	// lo = [0]
 	// hi = [0]
 	// W = []
 	// A = []
 	// }
-	return WavefrontComponent{
+	w := WavefrontComponent{
 		lo: &PositiveSlice[int]{
 			data:  []int{0},
 			valid: []bool{true},
@@ -48,98 +53,73 @@ func NewWavefrontComponent() WavefrontComponent {
 			data:  []int{0},
 			valid: []bool{true},
 		},
-		W: &PositiveSlice[*IntegerSlice[int]]{},
-		A: &PositiveSlice[*IntegerSlice[traceback]]{},
+		W: &PositiveSlice[*IntegerSlice[int]]{
+			defaultValue: &IntegerSlice[int]{
+				data:  []int{},
+				valid: []bool{},
+			},
+		},
+		A: &PositiveSlice[*IntegerSlice[traceback]]{
+			defaultValue: &IntegerSlice[traceback]{
+				data:  []traceback{},
+				valid: []bool{},
+			},
+		},
 	}
+
+	w.lo.Preallocate(preallocateSize)
+	w.hi.Preallocate(preallocateSize)
+	w.W.Preallocate(preallocateSize)
+	w.A.Preallocate(preallocateSize)
+
+	return w
 }
 
 // get value for wavefront=score, diag=k => returns ok, value
 func (w *WavefrontComponent) GetVal(score int, k int) (bool, int) {
-	// if W[score][k] is valid
-	if w.W.Valid(score) && w.W.Get(score).Valid(k) {
-		// return W[score][k]
-		return true, w.W.Get(score).Get(k)
-	} else {
-		return false, 0
-	}
+	return w.W.Valid(score) && w.W.Get(score).Valid(k), w.W.Get(score).Get(k)
 }
 
 // set value for wavefront=score, diag=k
 func (w *WavefrontComponent) SetVal(score int, k int, val int) {
-	// if W[score] is valid
-	if w.W.Valid(score) {
-		// W[score][k] = val
-		w.W.Get(score).Set(k, val)
-	} else {
-		// W[score] = []
-		w.W.Set(score, &IntegerSlice[int]{})
-		// W[score][k] = val
-		w.W.Get(score).Set(k, val)
-	}
+	w.W.Get(score).Set(k, val)
 }
 
 // get alignment traceback for wavefront=score, diag=k => returns ok, value
 func (w *WavefrontComponent) GetTraceback(score int, k int) (bool, traceback) {
-	// if W[score][k] is valid
-	if w.A.Valid(score) && w.A.Get(score).Valid(k) {
-		// return W[score][k]
-		return true, w.A.Get(score).Get(k)
-	} else {
-		return false, 0
-	}
+	return w.A.Valid(score) && w.A.Get(score).Valid(k), w.A.Get(score).Get(k)
 }
 
 // set alignment traceback for wavefront=score, diag=k
 func (w *WavefrontComponent) SetTraceback(score int, k int, val traceback) {
-	// if A[score] is valid
-	if w.A.Valid(score) {
-		// A[score][k] = val
-		w.A.Get(score).Set(k, val)
-	} else {
-		// W[score] = []
-		w.A.Set(score, &IntegerSlice[traceback]{})
-		// W[score][k] = val
-		w.A.Get(score).Set(k, val)
-	}
+	w.A.Get(score).Set(k, val)
 }
 
 // get hi for wavefront=score
-func (w *WavefrontComponent) GetHi(score int) (bool, int) {
-	// if hi[score] is valid
-	if w.hi.Valid(score) {
-		// return hi[score]
-		return true, w.hi.Get(score)
+func (w *WavefrontComponent) GetLoHi(score int) (bool, int, int) {
+	// if lo[score] and hi[score] are valid
+	if w.lo.Valid(score) && w.hi.Valid(score) {
+		// return lo[score] hi[score]
+		return true, w.lo.Get(score), w.hi.Get(score)
 	} else {
-		return false, 0
+		return false, 0, 0
 	}
 }
 
 // set hi for wavefront=score
-func (w *WavefrontComponent) SetHi(score int, hi int) {
-	// hi[score] = hi
-	w.hi.Set(score, hi)
-}
-
-// get lo for wavefront=score
-func (w *WavefrontComponent) GetLo(score int) (bool, int) {
-	// if lo[score] is valid
-	if w.lo.Valid(score) {
-		// return lo[score]
-		return true, w.lo.Get(score)
-	} else {
-		return false, 0
-	}
-}
-
-// set hi for wavefront=score
-func (w *WavefrontComponent) SetLo(score int, lo int) {
+func (w *WavefrontComponent) SetLoHi(score int, lo int, hi int) {
 	// lo[score] = lo
 	w.lo.Set(score, lo)
-}
+	// hi[score] = hi
+	w.hi.Set(score, hi)
 
-type Result struct {
-	Score int
-	CIGAR string
+	// preemptively setup w.A
+	w.A.Set(score, &IntegerSlice[traceback]{})
+	w.A.Get(score).Preallocate(lo, hi)
+
+	// preemptively setup w.W
+	w.W.Set(score, &IntegerSlice[int]{})
+	w.W.Get(score).Preallocate(lo, hi)
 }
 
 func (w *WavefrontComponent) String(score int) string {
