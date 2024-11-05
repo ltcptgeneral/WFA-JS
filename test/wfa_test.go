@@ -3,6 +3,7 @@ package tests
 import (
 	"bufio"
 	"encoding/json"
+	"math/rand/v2"
 	"os"
 	"strconv"
 	"strings"
@@ -25,6 +26,24 @@ type TestPenalty struct {
 type TestCase struct {
 	Penalties TestPenalty `json:"penalties"`
 	Solutions string      `json:"solutions"`
+}
+
+func randRange(min, max int) uint32 {
+	return uint32(rand.IntN(max-min) + min)
+}
+
+func TestWavefrontPacking(t *testing.T) {
+	for range 1000 {
+		val := randRange(0, 1000)
+		tb := wfa.Traceback(randRange(0, 7))
+		v := wfa.PackWavefrontValue(val, tb)
+
+		valid, gotVal, gotTB := wfa.UnpackWavefrontValue(v)
+
+		if !valid || gotVal != val || gotTB != tb {
+			t.Errorf(`test WavefrontPack/Unpack, val: %d, tb: %d, packedval: %x, gotok: %t, gotval: %d, gottb: %d\n`, val, tb, v, valid, gotVal, gotTB)
+		}
+	}
 }
 
 func TestWFA(t *testing.T) {

@@ -1,5 +1,3 @@
-//go:build debug
-
 package wfa
 
 import (
@@ -46,8 +44,9 @@ func (w *WavefrontComponent) String(score int) string {
 		hi := w.hi.Get(i)
 		// print out wavefront matrix
 		for k := min_lo; k <= max_hi; k++ {
-			if w.W.Valid(i) && w.W.Get(i).Valid(k) {
-				s = s + fmt.Sprintf("%02d", w.W.Get(i).Get(k))
+			valid, val, _ := UnpackWavefrontValue(w.W.Get(i).Get(k))
+			if valid {
+				s = s + fmt.Sprintf("%02d", val)
 			} else if k < lo || k > hi {
 				s = s + "--"
 			} else {
@@ -61,8 +60,9 @@ func (w *WavefrontComponent) String(score int) string {
 		s = s + "]\t["
 		// print out traceback matrix
 		for k := min_lo; k <= max_hi; k++ {
-			if w.A.Valid(i) && w.A.Get(i).Valid(k) {
-				s = s + traceback_str[w.A.Get(i).Get(k)]
+			valid, _, tb := UnpackWavefrontValue(w.W.Get(i).Get(k))
+			if valid {
+				s = s + traceback_str[tb]
 			} else if k < lo || k > hi {
 				s = s + "--"
 			} else {

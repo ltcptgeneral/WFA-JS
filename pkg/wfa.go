@@ -4,19 +4,18 @@ func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 	n := len(s1)
 	m := len(s2)
 	A_k := m - n
-	A_offset := m
+	A_offset := uint32(m)
 	score := 0
 	estimatedScore := (max(n, m) * max(penalties.M, penalties.X, penalties.O, penalties.E)) / 4
 	M := NewWavefrontComponent(estimatedScore)
 	M.SetLoHi(0, 0, 0)
-	M.SetVal(0, 0, 0)
-	M.SetTraceback(0, 0, End)
+	M.SetVal(0, 0, 0, End)
 	I := NewWavefrontComponent(estimatedScore)
 	D := NewWavefrontComponent(estimatedScore)
 
 	for {
 		WFExtend(M, s1, n, s2, m, score)
-		ok, val := M.GetVal(score, A_k)
+		ok, val, _ := M.GetVal(score, A_k)
 		if ok && val >= A_offset {
 			break
 		}
@@ -40,7 +39,8 @@ func WFExtend(M WavefrontComponent, s1 string, n int, s2 string, m int, score in
 	for k := lo; k <= hi; k++ {
 		// v = M[score][k] - k
 		// h = M[score][k]
-		ok, h := M.GetVal(score, k)
+		ok, hu, _ := M.GetVal(score, k)
+		h := int(hu)
 		v := h - k
 
 		// exit early if v or h are invalid
@@ -48,8 +48,8 @@ func WFExtend(M WavefrontComponent, s1 string, n int, s2 string, m int, score in
 			continue
 		}
 		for v < n && h < m && s1[v] == s2[h] {
-			_, val := M.GetVal(score, k)
-			M.SetVal(score, k, val+1)
+			_, val, tb := M.GetVal(score, k)
+			M.SetVal(score, k, val+1, tb)
 			v++
 			h++
 		}
@@ -75,7 +75,7 @@ func WFBacktrace(M WavefrontComponent, I WavefrontComponent, D WavefrontComponen
 	CIGAR_rev := ""
 	tb_s := score
 	tb_k := A_k
-	_, current_traceback := M.GetTraceback(tb_s, tb_k)
+	_, _, current_traceback := M.GetVal(tb_s, tb_k)
 	done := false
 
 	for !done {
@@ -84,31 +84,31 @@ func WFBacktrace(M WavefrontComponent, I WavefrontComponent, D WavefrontComponen
 		case OpenIns:
 			tb_s = tb_s - o - e
 			tb_k = tb_k - 1
-			_, current_traceback = M.GetTraceback(tb_s, tb_k)
+			_, _, current_traceback = M.GetVal(tb_s, tb_k)
 		case ExtdIns:
 			tb_s = tb_s - e
 			tb_k = tb_k - 1
-			_, current_traceback = I.GetTraceback(tb_s, tb_k)
+			_, _, current_traceback = I.GetVal(tb_s, tb_k)
 		case OpenDel:
 			tb_s = tb_s - o - e
 			tb_k = tb_k + 1
-			_, current_traceback = M.GetTraceback(tb_s, tb_k)
+			_, _, current_traceback = M.GetVal(tb_s, tb_k)
 		case ExtdDel:
 			tb_s = tb_s - e
 			tb_k = tb_k + 1
-			_, current_traceback = D.GetTraceback(tb_s, tb_k)
+			_, _, current_traceback = D.GetVal(tb_s, tb_k)
 		case Sub:
 			tb_s = tb_s - x
 			// tb_k = tb_k;
-			_, current_traceback = M.GetTraceback(tb_s, tb_k)
+			_, _, current_traceback = M.GetVal(tb_s, tb_k)
 		case Ins:
 			// tb_s = tb_s;
 			// tb_k = tb_k;
-			_, current_traceback = I.GetTraceback(tb_s, tb_k)
+			_, _, current_traceback = I.GetVal(tb_s, tb_k)
 		case Del:
 			// tb_s = tb_s;
 			// tb_k = tb_k;
-			_, current_traceback = D.GetTraceback(tb_s, tb_k)
+			_, _, current_traceback = D.GetVal(tb_s, tb_k)
 		case End:
 			done = true
 		}
