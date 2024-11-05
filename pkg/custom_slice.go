@@ -1,63 +1,59 @@
 package wfa
 
-type IntegerSlice[T any] struct {
-	data         []T
-	valid        []bool
-	defaultValue T
+import (
+	"golang.org/x/exp/constraints"
+)
+
+type Wavefront[T constraints.Integer] struct { // since wavefronts store diag distance, they should never be negative, and traceback data can be stored as uint8
+	data  []T
+	valid []bool
+	lo    int
 }
 
-func (a *IntegerSlice[T]) TranslateIndex(idx int) int {
-	if idx >= 0 { // 0 -> 0, 1 -> 2, 2 -> 4, 3 -> 6, ...
-		return 2 * idx
-	} else { // -1 -> 1, -2 -> 3, -3 -> 5, ...
-		return (-2 * idx) - 1
-	}
-}
+func NewWavefront[T constraints.Integer](lo int, hi int) *Wavefront[T] {
+	a := &Wavefront[T]{}
 
-func (a *IntegerSlice[T]) Valid(idx int) bool {
-	actualIdx := a.TranslateIndex(idx)
-	return 0 <= actualIdx && actualIdx < len(a.valid) && a.valid[actualIdx]
-}
+	a.lo = lo
+	size := a.TranslateIndex(hi)
 
-func (a *IntegerSlice[T]) Get(idx int) T {
-	actualIdx := a.TranslateIndex(idx)
-	if 0 <= actualIdx && actualIdx < len(a.valid) && a.valid[actualIdx] { // idx is in the slice
-		return a.data[actualIdx]
-	} else { // idx is out of the slice
-		return a.defaultValue
-	}
-}
-
-func (a *IntegerSlice[T]) Set(idx int, value T) {
-	actualIdx := a.TranslateIndex(idx)
-	if actualIdx >= len(a.valid) { // idx is outside the slice
-		// expand data array to actualIdx
-		newData := make([]T, 2*actualIdx+1)
-		copy(newData, a.data)
-		a.data = newData
-
-		// expand valid array to actualIdx
-		newValid := make([]bool, 2*actualIdx+1)
-		copy(newValid, a.valid)
-		a.valid = newValid
-	}
-
-	a.data[actualIdx] = value
-	a.valid[actualIdx] = true
-}
-
-func (a *IntegerSlice[T]) Preallocate(lo int, hi int) {
-	actualLo := a.TranslateIndex(lo)
-	actualHi := a.TranslateIndex(hi)
-	size := max(actualHi, actualLo)
-
-	// expand data array to actualIdx
 	newData := make([]T, size+1)
 	a.data = newData
 
-	// expand valid array to actualIdx
 	newValid := make([]bool, size+1)
 	a.valid = newValid
+
+	return a
+}
+
+func (a *Wavefront[T]) TranslateIndex(idx int) int {
+	return idx - a.lo
+}
+
+func (a *Wavefront[T]) Valid(idx int) bool {
+	actualIdx := a.TranslateIndex(idx)
+	return 0 <= actualIdx && actualIdx < len(a.data) && a.valid[actualIdx]
+}
+
+func (a *Wavefront[T]) Get(idx int) T {
+	actualIdx := a.TranslateIndex(idx)
+	if 0 <= actualIdx && actualIdx < len(a.data) { // idx is in the slice
+		return a.data[actualIdx]
+	} else { // idx is out of the slice
+		return 0
+	}
+}
+
+func (a *Wavefront[T]) Set(idx int, value T) {
+	actualIdx := a.TranslateIndex(idx)
+
+	/* in theory idx is always in bounds because the wavefront is preallocated
+	if actualIdx < 0 || actualIdx >= len(a.data) {
+		return
+	}
+	*/
+
+	a.data[actualIdx] = value
+	a.valid[actualIdx] = true
 }
 
 type PositiveSlice[T any] struct {

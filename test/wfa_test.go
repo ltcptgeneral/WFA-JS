@@ -64,7 +64,7 @@ func TestWFA(t *testing.T) {
 			s2 := sequences.Text()
 			s2 = s2[1:]
 
-			x := wfa.WFAlign(s1, s2, testPenalties, false)
+			x := wfa.WFAlign(s1, s2, testPenalties, true)
 			gotScore := x.Score
 
 			if gotScore != -1*expectedScore {

@@ -1,10 +1,5 @@
 package wfa
 
-import (
-	"fmt"
-	"math"
-)
-
 type Result struct {
 	Score int
 	CIGAR string
@@ -31,10 +26,10 @@ const (
 )
 
 type WavefrontComponent struct {
-	lo *PositiveSlice[int]                      // lo for each wavefront
-	hi *PositiveSlice[int]                      // hi for each wavefront
-	W  *PositiveSlice[*IntegerSlice[int]]       // wavefront diag distance for each wavefront
-	A  *PositiveSlice[*IntegerSlice[traceback]] // compact CIGAR for backtrace for each wavefront
+	lo *PositiveSlice[int]                   // lo for each wavefront
+	hi *PositiveSlice[int]                   // hi for each wavefront
+	W  *PositiveSlice[*Wavefront[int]]       // wavefront diag distance for each wavefront
+	A  *PositiveSlice[*Wavefront[traceback]] // compact CIGAR for backtrace for each wavefront
 }
 
 func NewWavefrontComponent(preallocateSize int) WavefrontComponent {
@@ -53,16 +48,16 @@ func NewWavefrontComponent(preallocateSize int) WavefrontComponent {
 			data:  []int{0},
 			valid: []bool{true},
 		},
-		W: &PositiveSlice[*IntegerSlice[int]]{
-			defaultValue: &IntegerSlice[int]{
-				data:  []int{},
-				valid: []bool{},
+		W: &PositiveSlice[*Wavefront[int]]{
+			defaultValue: &Wavefront[int]{
+				data:  []int{0},
+				valid: []bool{false},
 			},
 		},
-		A: &PositiveSlice[*IntegerSlice[traceback]]{
-			defaultValue: &IntegerSlice[traceback]{
-				data:  []traceback{},
-				valid: []bool{},
+		A: &PositiveSlice[*Wavefront[traceback]]{
+			defaultValue: &Wavefront[traceback]{
+				data:  []traceback{0},
+				valid: []bool{false},
 			},
 		},
 	}
@@ -114,81 +109,10 @@ func (w *WavefrontComponent) SetLoHi(score int, lo int, hi int) {
 	w.hi.Set(score, hi)
 
 	// preemptively setup w.A
-	w.A.Set(score, &IntegerSlice[traceback]{})
-	w.A.Get(score).Preallocate(lo, hi)
+	a := NewWavefront[traceback](lo, hi)
+	w.A.Set(score, a)
 
 	// preemptively setup w.W
-	w.W.Set(score, &IntegerSlice[int]{})
-	w.W.Get(score).Preallocate(lo, hi)
-}
-
-func (w *WavefrontComponent) String(score int) string {
-	traceback_str := []string{"OI", "EI", "OD", "ED", "SB", "IN", "DL", "EN"}
-	s := "<"
-	min_lo := math.MaxInt
-	max_hi := math.MinInt
-
-	for i := 0; i <= score; i++ {
-		if w.lo.Valid(i) && w.lo.Get(i) < min_lo {
-			min_lo = w.lo.Get(i)
-		}
-		if w.hi.Valid(i) && w.hi.Get(i) > max_hi {
-			max_hi = w.hi.Get(i)
-		}
-	}
-
-	for k := min_lo; k <= max_hi; k++ {
-		s = s + fmt.Sprintf("%02d", k)
-		if k < max_hi {
-			s = s + "|"
-		}
-	}
-
-	s = s + ">\t<"
-
-	for k := min_lo; k <= max_hi; k++ {
-		s = s + fmt.Sprintf("%02d", k)
-		if k < max_hi {
-			s = s + "|"
-		}
-	}
-
-	s = s + ">\n"
-
-	for i := 0; i <= score; i++ {
-		s = s + "["
-		lo := w.lo.Get(i)
-		hi := w.hi.Get(i)
-		// print out wavefront matrix
-		for k := min_lo; k <= max_hi; k++ {
-			if w.W.Valid(i) && w.W.Get(i).Valid(k) {
-				s = s + fmt.Sprintf("%02d", w.W.Get(i).Get(k))
-			} else if k < lo || k > hi {
-				s = s + "--"
-			} else {
-				s = s + "  "
-			}
-
-			if k < max_hi {
-				s = s + "|"
-			}
-		}
-		s = s + "]\t["
-		// print out traceback matrix
-		for k := min_lo; k <= max_hi; k++ {
-			if w.A.Valid(i) && w.A.Get(i).Valid(k) {
-				s = s + traceback_str[w.A.Get(i).Get(k)]
-			} else if k < lo || k > hi {
-				s = s + "--"
-			} else {
-				s = s + "  "
-			}
-
-			if k < max_hi {
-				s = s + "|"
-			}
-		}
-		s = s + "]\n"
-	}
-	return s
+	b := NewWavefront[int](lo, hi)
+	w.W.Set(score, b)
 }
