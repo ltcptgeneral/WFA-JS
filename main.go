@@ -79,7 +79,7 @@ func DecodeCIGAR(this js.Value, args []js.Value) interface{} {
 	}
 
 	if args[0].Type() != js.TypeString {
-		fmt.Println("s1 should be a string")
+		fmt.Println("CIGAR should be a string")
 		return nil
 	}
 
