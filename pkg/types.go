@@ -39,10 +39,10 @@ func PackWavefrontValue(value uint32, traceback Traceback) WavefrontValue {
 }
 
 // UnpackWavefrontValue: opens a WavefrontValue into a valid bool, diag value and traceback
-func UnpackWavefrontValue(wf WavefrontValue) (bool, uint32, Traceback) {
-	valueBM := uint32(wf & 0x0FFF_FFFF)
-	tracebackBM := uint8(wf & 0x7000_0000 >> 28)
-	validBM := wf&0x8000_0000 != 0
+func UnpackWavefrontValue(wfv WavefrontValue) (bool, uint32, Traceback) {
+	valueBM := uint32(wfv & 0x0FFF_FFFF)
+	tracebackBM := uint8(wfv & 0x7000_0000 >> 28)
+	validBM := wfv&0x8000_0000 != 0
 	return validBM, valueBM, Traceback(tracebackBM)
 }
 

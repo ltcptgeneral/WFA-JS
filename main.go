@@ -9,6 +9,7 @@ import (
 func main() {
 	c := make(chan bool)
 	js.Global().Set("wfAlign", js.FuncOf(wfAlign))
+	js.Global().Set("DecodeCIGAR", js.FuncOf(DecodeCIGAR))
 	<-c
 }
 
@@ -69,4 +70,22 @@ func wfAlign(this js.Value, args []js.Value) interface{} {
 	}
 
 	return js.ValueOf(resultMap)
+}
+
+func DecodeCIGAR(this js.Value, args []js.Value) interface{} {
+	if len(args) != 1 {
+		fmt.Println("invalid number of args, requires 1: CIGAR")
+		return nil
+	}
+
+	if args[0].Type() != js.TypeString {
+		fmt.Println("s1 should be a string")
+		return nil
+	}
+
+	CIGAR := args[0].String()
+
+	decoded := wfa.RunLengthDecode(CIGAR)
+
+	return js.ValueOf(decoded)
 }

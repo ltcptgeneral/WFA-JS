@@ -1,5 +1,9 @@
 package wfa
 
+import (
+	"strings"
+)
+
 func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 	n := len(s1)
 	m := len(s2)
@@ -25,7 +29,7 @@ func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 
 	CIGAR := ""
 	if doCIGAR {
-		CIGAR = WFBacktrace(M, I, D, score, penalties, A_k, s1, s2)
+		CIGAR = WFBacktrace(M, I, D, score, penalties, A_k, A_offset, s1, s2)
 	}
 
 	return Result{
@@ -67,76 +71,128 @@ func WFNext(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, sc
 	}
 }
 
-func WFBacktrace(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, penalties Penalty, A_k int, s1 string, s2 string) string {
-	traceback_CIGAR := []string{"I", "I", "D", "D", "X", "", "", ""}
+func WFBacktrace(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, penalties Penalty, A_k int, A_offset uint32, s1 string, s2 string) string {
 	x := penalties.X
 	o := penalties.O
 	e := penalties.E
-	CIGAR_rev := ""
+
 	tb_s := score
 	tb_k := A_k
-	_, _, current_traceback := M.GetVal(tb_s, tb_k)
 	done := false
 
+	_, current_dist, current_traceback := M.GetVal(tb_s, tb_k)
+
+	Ops := []rune{'~'}
+	Counts := []uint{0}
+	idx := 0
+
 	for !done {
-		CIGAR_rev = CIGAR_rev + traceback_CIGAR[current_traceback]
 		switch current_traceback {
 		case OpenIns:
+			if Ops[idx] == 'I' {
+				Counts[idx]++
+			} else {
+				Ops = append(Ops, 'I')
+				Counts = append(Counts, 1)
+				idx++
+			}
+
 			tb_s = tb_s - o - e
 			tb_k = tb_k - 1
-			_, _, current_traceback = M.GetVal(tb_s, tb_k)
+			_, current_dist, current_traceback = M.GetVal(tb_s, tb_k)
 		case ExtdIns:
+			if Ops[idx] == 'I' {
+				Counts[idx]++
+			} else {
+				Ops = append(Ops, 'I')
+				Counts = append(Counts, 1)
+				idx++
+			}
+
 			tb_s = tb_s - e
 			tb_k = tb_k - 1
-			_, _, current_traceback = I.GetVal(tb_s, tb_k)
+			_, current_dist, current_traceback = I.GetVal(tb_s, tb_k)
 		case OpenDel:
+			if Ops[idx] == 'D' {
+				Counts[idx]++
+			} else {
+				Ops = append(Ops, 'D')
+				Counts = append(Counts, 1)
+				idx++
+			}
+
 			tb_s = tb_s - o - e
 			tb_k = tb_k + 1
-			_, _, current_traceback = M.GetVal(tb_s, tb_k)
+			_, current_dist, current_traceback = M.GetVal(tb_s, tb_k)
 		case ExtdDel:
+			if Ops[idx] == 'D' {
+				Counts[idx]++
+			} else {
+				Ops = append(Ops, 'D')
+				Counts = append(Counts, 1)
+				idx++
+			}
+
 			tb_s = tb_s - e
 			tb_k = tb_k + 1
-			_, _, current_traceback = D.GetVal(tb_s, tb_k)
+			_, current_dist, current_traceback = D.GetVal(tb_s, tb_k)
 		case Sub:
 			tb_s = tb_s - x
 			// tb_k = tb_k;
-			_, _, current_traceback = M.GetVal(tb_s, tb_k)
+			_, next_dist, next_traceback := M.GetVal(tb_s, tb_k)
+
+			if int(current_dist-next_dist)-1 > 0 {
+				Ops = append(Ops, 'M')
+				Counts = append(Counts, uint(current_dist-next_dist)-1)
+				idx++
+			}
+
+			if Ops[idx] == 'X' {
+				Counts[idx]++
+			} else {
+				Ops = append(Ops, 'X')
+				Counts = append(Counts, 1)
+				idx++
+			}
+
+			current_dist = next_dist
+			current_traceback = next_traceback
 		case Ins:
 			// tb_s = tb_s;
 			// tb_k = tb_k;
-			_, _, current_traceback = I.GetVal(tb_s, tb_k)
+			_, next_dist, next_traceback := I.GetVal(tb_s, tb_k)
+
+			Ops = append(Ops, 'M')
+			Counts = append(Counts, uint(current_dist-next_dist))
+			idx++
+
+			current_dist = next_dist
+			current_traceback = next_traceback
 		case Del:
 			// tb_s = tb_s;
 			// tb_k = tb_k;
-			_, _, current_traceback = D.GetVal(tb_s, tb_k)
+			_, next_dist, next_traceback := D.GetVal(tb_s, tb_k)
+
+			Ops = append(Ops, 'M')
+			Counts = append(Counts, uint(current_dist-next_dist))
+			idx++
+
+			current_dist = next_dist
+			current_traceback = next_traceback
 		case End:
+			Ops = append(Ops, 'M')
+			Counts = append(Counts, uint(current_dist))
+			idx++
+
 			done = true
 		}
 	}
 
-	CIGAR_part := Reverse(CIGAR_rev)
-	c := 0
-	i := 0
-	j := 0
-	for i < len(s1) && j < len(s2) {
-		if s1[i] == s2[j] {
-			//CIGAR_part.splice(c, 0, "M")
-			CIGAR_part = Splice(CIGAR_part, 'M', c)
-			c++
-			i++
-			j++
-		} else if CIGAR_part[c] == 'X' {
-			c++
-			i++
-			j++
-		} else if CIGAR_part[c] == 'I' {
-			c++
-			j++
-		} else if CIGAR_part[c] == 'D' {
-			c++
-			i++
-		}
+	CIGAR := strings.Builder{}
+	for i := len(Ops) - 1; i > 0; i-- {
+		CIGAR.WriteString(UIntToString(Counts[i]))
+		CIGAR.WriteRune(Ops[i])
 	}
 
-	return CIGAR_part
+	return CIGAR.String()
 }
