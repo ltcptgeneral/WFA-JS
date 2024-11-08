@@ -95,7 +95,7 @@ func SafeArgMin[T constraints.Integer](valids []bool, values []T) (bool, int) {
 	}
 }
 
-func NextLoHi(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, penalties Penalty) (int, int) {
+func NextLoHi(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent, score int, penalties Penalty) (int, int) {
 	x := penalties.X
 	o := penalties.O
 	e := penalties.E
@@ -125,7 +125,7 @@ func NextLoHi(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, 
 	return lo, hi
 }
 
-func NextI(M WavefrontComponent, I WavefrontComponent, score int, k int, penalties Penalty) {
+func NextI(M *WavefrontComponent, I *WavefrontComponent, score int, k int, penalties Penalty) {
 	o := penalties.O
 	e := penalties.E
 
@@ -139,7 +139,7 @@ func NextI(M WavefrontComponent, I WavefrontComponent, score int, k int, penalti
 	}
 }
 
-func NextD(M WavefrontComponent, D WavefrontComponent, score int, k int, penalties Penalty) {
+func NextD(M *WavefrontComponent, D *WavefrontComponent, score int, k int, penalties Penalty) {
 	o := penalties.O
 	e := penalties.E
 
@@ -153,7 +153,7 @@ func NextD(M WavefrontComponent, D WavefrontComponent, score int, k int, penalti
 	}
 }
 
-func NextM(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, k int, penalties Penalty) {
+func NextM(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent, score int, k int, penalties Penalty) {
 	x := penalties.X
 
 	a_ok, a, _ := M.GetVal(score-x, k)

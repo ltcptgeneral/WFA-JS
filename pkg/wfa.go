@@ -38,7 +38,7 @@ func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 	}
 }
 
-func WFExtend(M WavefrontComponent, s1 string, n int, s2 string, m int, score int) {
+func WFExtend(M *WavefrontComponent, s1 string, n int, s2 string, m int, score int) {
 	_, lo, hi := M.GetLoHi(score)
 	for k := lo; k <= hi; k++ {
 		// v = M[score][k] - k
@@ -60,7 +60,7 @@ func WFExtend(M WavefrontComponent, s1 string, n int, s2 string, m int, score in
 	}
 }
 
-func WFNext(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, penalties Penalty) {
+func WFNext(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent, score int, penalties Penalty) {
 	// get this score's lo, hi
 	lo, hi := NextLoHi(M, I, D, score, penalties)
 
@@ -71,7 +71,7 @@ func WFNext(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, sc
 	}
 }
 
-func WFBacktrace(M WavefrontComponent, I WavefrontComponent, D WavefrontComponent, score int, penalties Penalty, A_k int, A_offset uint32, s1 string, s2 string) string {
+func WFBacktrace(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent, score int, penalties Penalty, A_k int, A_offset uint32, s1 string, s2 string) string {
 	x := penalties.X
 	o := penalties.O
 	e := penalties.E

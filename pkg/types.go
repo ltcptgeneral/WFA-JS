@@ -101,13 +101,13 @@ type WavefrontComponent struct {
 }
 
 // NewWavefrontComponent: returns initialized WavefrontComponent
-func NewWavefrontComponent(preallocateSize int) WavefrontComponent {
+func NewWavefrontComponent(preallocateSize int) *WavefrontComponent {
 	// new wavefront component = {
 	// lo = [0]
 	// hi = [0]
 	// W = []
 	// }
-	w := WavefrontComponent{
+	w := &WavefrontComponent{
 		lo: &PositiveSlice[int]{
 			data:  []int{0},
 			valid: []bool{true},
