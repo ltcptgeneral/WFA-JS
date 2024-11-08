@@ -5,7 +5,9 @@ Download `wfa.js` and `wfa.wasm`from [releases](https://git.tronnet.net/tronnet/
 ```
 import wfa from "./wfa.js"
 await wfa("<path to wasm>")
-console.log(wfAlign(...))
+let result = wfAlign(...)
+operations = DecodeCIGAR(result.CIGAR)
+// ...
 ```
 
 Where `<path to wasm>` is the path from the site root ie. `./scripts/wfa.wasm`. This will depend on your project structure.
