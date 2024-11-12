@@ -44,7 +44,7 @@ func UnpackWavefrontLoHi(lohi WavefrontLoHi) (int, int) {
 // technically this restricts to alignments with less than 268 million characters but that should be sufficient for most cases
 type WavefrontValue uint32
 
-// TODO: add 64 bit packed value in case more than 268 characters are needed
+// TODO: add 64 bit packed value in case more than 268 million characters are needed
 
 // PackWavefrontValue: packs a diag value and traceback into a WavefrontValue
 func PackWavefrontValue(value uint32, traceback Traceback) WavefrontValue {
