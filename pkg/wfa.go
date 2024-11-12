@@ -10,12 +10,11 @@ func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 	A_k := m - n
 	A_offset := uint32(m)
 	score := 0
-	estimatedScore := (max(n, m) * max(penalties.M, penalties.X, penalties.O, penalties.E)) / 4
-	M := NewWavefrontComponent(estimatedScore)
+	M := NewWavefrontComponent()
 	M.SetLoHi(0, 0, 0)
 	M.SetVal(0, 0, 0, End)
-	I := NewWavefrontComponent(estimatedScore)
-	D := NewWavefrontComponent(estimatedScore)
+	I := NewWavefrontComponent()
+	D := NewWavefrontComponent()
 
 	for {
 		WFExtend(M, s1, n, s2, m, score)

@@ -116,7 +116,7 @@ type WavefrontComponent struct {
 }
 
 // NewWavefrontComponent: returns initialized WavefrontComponent
-func NewWavefrontComponent(preallocateSize int) *WavefrontComponent {
+func NewWavefrontComponent() *WavefrontComponent {
 	// new wavefront component = {
 	// lo = [0]
 	// hi = [0]
@@ -130,7 +130,7 @@ func NewWavefrontComponent(preallocateSize int) *WavefrontComponent {
 		},
 	}
 
-	w.W.Preallocate(preallocateSize)
+	//w.W.Preallocate(preallocateSize)
 
 	return w
 }
