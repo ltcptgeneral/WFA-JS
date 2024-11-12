@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"syscall/js"
 	wfa "wfa/pkg"
 )
@@ -15,32 +14,47 @@ func main() {
 
 func wfAlign(this js.Value, args []js.Value) interface{} {
 	if len(args) != 4 {
-		fmt.Println("invalid number of args, requires 4: s1, s2, penalties, doCIGAR")
-		return nil
+		resultMap := map[string]interface{}{
+			"ok":    false,
+			"error": "invalid number of args, requires 4: s1, s2, penalties, doCIGAR",
+		}
+		return js.ValueOf(resultMap)
 	}
 
 	if args[0].Type() != js.TypeString {
-		fmt.Println("s1 should be a string")
-		return nil
+		resultMap := map[string]interface{}{
+			"ok":    false,
+			"error": "s1 should be a string",
+		}
+		return js.ValueOf(resultMap)
 	}
 
 	s1 := args[0].String()
 
 	if args[1].Type() != js.TypeString {
-		fmt.Println("s2 should be a string")
-		return nil
+		resultMap := map[string]interface{}{
+			"ok":    false,
+			"error": "s2 should be a string",
+		}
+		return js.ValueOf(resultMap)
 	}
 
 	s2 := args[1].String()
 
 	if args[2].Type() != js.TypeObject {
-		fmt.Println("penalties should be a map with key values m, x, o, e")
-		return nil
+		resultMap := map[string]interface{}{
+			"ok":    false,
+			"error": "penalties should be a map with key values m, x, o, e",
+		}
+		return js.ValueOf(resultMap)
 	}
 
 	if args[2].Get("m").IsUndefined() || args[2].Get("x").IsUndefined() || args[2].Get("o").IsUndefined() || args[2].Get("e").IsUndefined() {
-		fmt.Println("penalties should be a map with key values m, x, o, e")
-		return nil
+		resultMap := map[string]interface{}{
+			"ok":    false,
+			"error": "penalties should be a map with key values m, x, o, e",
+		}
+		return js.ValueOf(resultMap)
 	}
 
 	m := args[2].Get("m").Int()
@@ -56,8 +70,11 @@ func wfAlign(this js.Value, args []js.Value) interface{} {
 	}
 
 	if args[3].Type() != js.TypeBoolean {
-		fmt.Println("doCIGAR should be a boolean")
-		return nil
+		resultMap := map[string]interface{}{
+			"ok":    false,
+			"error": "doCIGAR should be a boolean",
+		}
+		return js.ValueOf(resultMap)
 	}
 
 	doCIGAR := args[3].Bool()
@@ -65,8 +82,10 @@ func wfAlign(this js.Value, args []js.Value) interface{} {
 	// Call the actual func.
 	result := wfa.WFAlign(s1, s2, penalties, doCIGAR)
 	resultMap := map[string]interface{}{
+		"ok":    true,
 		"score": result.Score,
 		"CIGAR": result.CIGAR,
+		"error": "",
 	}
 
 	return js.ValueOf(resultMap)
@@ -74,12 +93,12 @@ func wfAlign(this js.Value, args []js.Value) interface{} {
 
 func DecodeCIGAR(this js.Value, args []js.Value) interface{} {
 	if len(args) != 1 {
-		fmt.Println("invalid number of args, requires 1: CIGAR")
+		println("invalid number of args, requires 1: CIGAR")
 		return nil
 	}
 
 	if args[0].Type() != js.TypeString {
-		fmt.Println("CIGAR should be a string")
+		println("CIGAR should be a string")
 		return nil
 	}
 

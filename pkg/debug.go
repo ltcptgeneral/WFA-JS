@@ -1,3 +1,5 @@
+//go:build debug
+
 package wfa
 
 import (
@@ -12,11 +14,13 @@ func (w *WavefrontComponent) String(score int) string {
 	max_hi := math.MinInt
 
 	for i := 0; i <= score; i++ {
-		if w.lo.Valid(i) && w.lo.Get(i) < min_lo {
-			min_lo = w.lo.Get(i)
+		valid := w.W.Valid(i)
+		lo, hi := UnpackWavefrontLoHi(w.W.Get(i).lohi)
+		if valid && lo < min_lo {
+			min_lo = lo
 		}
-		if w.hi.Valid(i) && w.hi.Get(i) > max_hi {
-			max_hi = w.hi.Get(i)
+		if valid && hi > max_hi {
+			max_hi = hi
 		}
 	}
 
@@ -40,9 +44,7 @@ func (w *WavefrontComponent) String(score int) string {
 
 	for i := 0; i <= score; i++ {
 		s = s + "["
-		lo := w.lo.Get(i)
-		hi := w.hi.Get(i)
-		// print out wavefront matrix
+		lo, hi := UnpackWavefrontLoHi(w.W.Get(i).lohi)
 		for k := min_lo; k <= max_hi; k++ {
 			valid, val, _ := UnpackWavefrontValue(w.W.Get(i).Get(k))
 			if valid {

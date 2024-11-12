@@ -25,39 +25,55 @@ const (
 	End
 )
 
+// bitpacked wavefront lo/hi values with 32 bits each
+type WavefrontLoHi uint64
+
+func PackWavefrontLoHi(lo int, hi int) WavefrontLoHi {
+	loBM := int64(int32(lo)) & 0x0000_0000_FFFF_FFFF
+	hiBM := int64(int64(hi) << 32)
+	return WavefrontLoHi(hiBM | loBM)
+}
+
+func UnpackWavefrontLoHi(lohi WavefrontLoHi) (int, int) {
+	loBM := int(int32(lohi & 0x0000_0000_FFFF_FFFF))
+	hiBM := int(int32(lohi & 0xFFFF_FFFF_0000_0000 >> 32))
+	return loBM, hiBM
+}
+
 // bitpacked wavefront values with 1 valid bit, 3 traceback bits, and 28 bits for the diag distance
-// technically this restricts to solutions within 268 million score but that should be sufficient for most cases
+// technically this restricts to alignments with less than 268 million characters but that should be sufficient for most cases
 type WavefrontValue uint32
 
-// TODO: add 64 bit packed value in case more than 268 million score is needed
+// TODO: add 64 bit packed value in case more than 268 characters are needed
 
 // PackWavefrontValue: packs a diag value and traceback into a WavefrontValue
 func PackWavefrontValue(value uint32, traceback Traceback) WavefrontValue {
-	valueBM := value & 0x0FFF_FFFF
+	validBM := uint32(0x8000_0000)
 	tracebackBM := uint32(traceback&0x0000_0007) << 28
-	return WavefrontValue(0x8000_0000 | valueBM | tracebackBM)
+	valueBM := value & 0x0FFF_FFFF
+	return WavefrontValue(validBM | tracebackBM | valueBM)
 }
 
 // UnpackWavefrontValue: opens a WavefrontValue into a valid bool, diag value and traceback
 func UnpackWavefrontValue(wfv WavefrontValue) (bool, uint32, Traceback) {
-	valueBM := uint32(wfv & 0x0FFF_FFFF)
-	tracebackBM := uint8(wfv & 0x7000_0000 >> 28)
 	validBM := wfv&0x8000_0000 != 0
+	tracebackBM := uint8(wfv & 0x7000_0000 >> 28)
+	valueBM := uint32(wfv & 0x0FFF_FFFF)
 	return validBM, valueBM, Traceback(tracebackBM)
 }
 
 // Wavefront: stores a single wavefront, stores wavefront's lo value and hi is naturally lo + len(data)
 type Wavefront struct { // since wavefronts store diag distance, they should never be negative, and traceback data can be stored as uint8
 	data []WavefrontValue
-	lo   int
+	lohi WavefrontLoHi
 }
 
 // NewWavefront: returns a new wavefront with size accomodating lo and hi (inclusive)
 func NewWavefront(lo int, hi int) *Wavefront {
 	a := &Wavefront{}
 
-	a.lo = lo
-	size := a.TranslateIndex(hi)
+	a.lohi = PackWavefrontLoHi(lo, hi)
+	size := hi - lo
 
 	newData := make([]WavefrontValue, size+1)
 	a.data = newData
@@ -67,7 +83,8 @@ func NewWavefront(lo int, hi int) *Wavefront {
 
 // TranslateIndex: utility function for getting the data index given a diagonal
 func (a *Wavefront) TranslateIndex(diagonal int) int {
-	return diagonal - a.lo
+	lo := int(int32(a.lohi & 0x0000_0000_FFFF_FFFF))
+	return diagonal - lo
 }
 
 // Get: returns WavefrontValue for given diagonal
@@ -95,9 +112,7 @@ func (a *Wavefront) Set(diagonal int, value WavefrontValue) {
 
 // WavefrontComponent: each M/I/D wavefront matrix including the wavefront data, lo and hi
 type WavefrontComponent struct {
-	lo *PositiveSlice[int]        // lo for each wavefront
-	hi *PositiveSlice[int]        // hi for each wavefront
-	W  *PositiveSlice[*Wavefront] // wavefront diag distance and traceback for each wavefront
+	W *PositiveSlice[*Wavefront] // wavefront diag distance and traceback for each wavefront
 }
 
 // NewWavefrontComponent: returns initialized WavefrontComponent
@@ -108,14 +123,6 @@ func NewWavefrontComponent(preallocateSize int) *WavefrontComponent {
 	// W = []
 	// }
 	w := &WavefrontComponent{
-		lo: &PositiveSlice[int]{
-			data:  []int{0},
-			valid: []bool{true},
-		},
-		hi: &PositiveSlice[int]{
-			data:  []int{0},
-			valid: []bool{true},
-		},
 		W: &PositiveSlice[*Wavefront]{
 			defaultValue: &Wavefront{
 				data: []WavefrontValue{0},
@@ -123,8 +130,6 @@ func NewWavefrontComponent(preallocateSize int) *WavefrontComponent {
 		},
 	}
 
-	w.lo.Preallocate(preallocateSize)
-	w.hi.Preallocate(preallocateSize)
 	w.W.Preallocate(preallocateSize)
 
 	return w
@@ -142,23 +147,12 @@ func (w *WavefrontComponent) SetVal(score int, k int, val uint32, tb Traceback) 
 
 // GetLoHi: get lo and hi for wavefront=score
 func (w *WavefrontComponent) GetLoHi(score int) (bool, int, int) {
-	// if lo[score] and hi[score] are valid
-	if w.lo.Valid(score) && w.hi.Valid(score) {
-		// return lo[score] hi[score]
-		return true, w.lo.Get(score), w.hi.Get(score)
-	} else {
-		return false, 0, 0
-	}
+	lo, hi := UnpackWavefrontLoHi(w.W.Get(score).lohi)
+	return w.W.Valid(score), lo, hi
 }
 
 // SetLoHi: set lo and hi for wavefront=score
 func (w *WavefrontComponent) SetLoHi(score int, lo int, hi int) {
-	// lo[score] = lo
-	w.lo.Set(score, lo)
-	// hi[score] = hi
-	w.hi.Set(score, hi)
-
-	// preemptively setup w.W
 	b := NewWavefront(lo, hi)
 	w.W.Set(score, b)
 }

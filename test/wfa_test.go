@@ -12,6 +12,7 @@ import (
 	wfa "wfa/pkg"
 
 	"github.com/schollz/progressbar/v3"
+	"golang.org/x/exp/constraints"
 )
 
 const testJsonPath = "tests.json"
@@ -29,20 +30,34 @@ type TestCase struct {
 	Solutions string      `json:"solutions"`
 }
 
-func randRange(min, max int) uint32 {
-	return uint32(rand.IntN(max-min) + min)
+func randRange[T constraints.Integer](min, max int) T {
+	return T(rand.IntN(max-min) + min)
 }
 
 func TestWavefrontPacking(t *testing.T) {
 	for range 1000 {
-		val := randRange(0, 1000)
-		tb := wfa.Traceback(randRange(0, 7))
+		val := randRange[uint32](0, 1000)
+		tb := wfa.Traceback(randRange[uint32](0, 7))
 		v := wfa.PackWavefrontValue(val, tb)
 
 		valid, gotVal, gotTB := wfa.UnpackWavefrontValue(v)
 
 		if !valid || gotVal != val || gotTB != tb {
 			t.Errorf(`test WavefrontPack/Unpack, val: %d, tb: %d, packedval: %x, gotok: %t, gotval: %d, gottb: %d\n`, val, tb, v, valid, gotVal, gotTB)
+		}
+	}
+}
+
+func TestLoHiPacking(t *testing.T) {
+	for range 1000 {
+		lo := randRange[int](-1000, 1000)
+		hi := randRange[int](-1000, 1000)
+		v := wfa.PackWavefrontLoHi(lo, hi)
+
+		gotLo, gotHi := wfa.UnpackWavefrontLoHi(v)
+
+		if gotLo != lo || gotHi != hi {
+			t.Errorf(`test WavefrontPack/Unpack, lo: %d, hi: %d, packedval: %x, gotlo: %d, gothi: %d`, lo, hi, v, gotLo, gotHi)
 		}
 	}
 }
