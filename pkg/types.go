@@ -130,8 +130,6 @@ func NewWavefrontComponent() *WavefrontComponent {
 		},
 	}
 
-	//w.W.Preallocate(preallocateSize)
-
 	return w
 }
 

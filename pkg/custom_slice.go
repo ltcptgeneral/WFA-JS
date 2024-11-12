@@ -41,15 +41,3 @@ func (a *PositiveSlice[T]) Set(idx int, value T) {
 	a.data[actualIdx] = value
 	a.valid[actualIdx] = true
 }
-
-func (a *PositiveSlice[T]) Preallocate(hi int) {
-	size := hi
-
-	// expand data array to actualIdx
-	newData := make([]T, size+1)
-	a.data = newData
-
-	// expand valid array to actualIdx
-	newValid := make([]bool, size+1)
-	a.valid = newValid
-}
