@@ -1,6 +1,6 @@
 # Using WFA-JS
 
-Download `wfa.js` and `wfa.wasm`from [releases](https://git.tronnet.net/tronnet/WFA-JS/releases) to your project. Add to your script:
+Download `wfa.js` and `wfa.wasm`from [releases](https://git.tronnet.net/alu/WFA-JS/releases) to your project. Add to your script:
 
 ```
 import wfa from "./wfa.js"

@@ -1,4 +1,4 @@
-.PHONY: build clean test
+.PHONY: build clean test dev-init
 
 build: clean
 	@echo "======================== Building Binary ======================="
@@ -24,3 +24,7 @@ test:
 	@rm -f mem.prof
 
 	@rm -f test.test
+
+dev-init:
+	apt install minify
+	go get -t wfa/test

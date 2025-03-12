@@ -1,6 +1,6 @@
 module wfa
 
-go 1.23.2
+go 1.23.6
 
 require (
 	github.com/schollz/progressbar/v3 v3.17.1
