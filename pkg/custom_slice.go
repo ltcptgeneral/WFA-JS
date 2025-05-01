@@ -6,38 +6,31 @@ type PositiveSlice[T any] struct {
 	defaultValue T
 }
 
-func (a *PositiveSlice[T]) TranslateIndex(idx int) int {
-	return idx
-}
-
 func (a *PositiveSlice[T]) Valid(idx int) bool {
-	actualIdx := a.TranslateIndex(idx)
-	return 0 <= actualIdx && actualIdx < len(a.valid) && a.valid[actualIdx]
+	return 0 <= idx && idx < len(a.valid) && a.valid[idx]
 }
 
 func (a *PositiveSlice[T]) Get(idx int) T {
-	actualIdx := a.TranslateIndex(idx)
-	if 0 <= actualIdx && actualIdx < len(a.valid) && a.valid[actualIdx] { // idx is in the slice
-		return a.data[actualIdx]
+	if 0 <= idx && idx < len(a.valid) && a.valid[idx] { // idx is in the slice
+		return a.data[idx]
 	} else { // idx is out of the slice
 		return a.defaultValue
 	}
 }
 
 func (a *PositiveSlice[T]) Set(idx int, value T) {
-	actualIdx := a.TranslateIndex(idx)
-	if actualIdx < 0 || actualIdx >= len(a.valid) { // idx is outside the slice
-		// expand data array to actualIdx
-		newData := make([]T, 2*actualIdx+1)
+	if idx < 0 || idx >= len(a.valid) { // idx is outside the slice
+		// expand data array to 2*idx
+		newData := make([]T, 2*idx+1)
 		copy(newData, a.data)
 		a.data = newData
 
-		// expand valid array to actualIdx
-		newValid := make([]bool, 2*actualIdx+1)
+		// expand valid array to 2*idx
+		newValid := make([]bool, 2*idx+1)
 		copy(newValid, a.valid)
 		a.valid = newValid
 	}
 
-	a.data[actualIdx] = value
-	a.valid[actualIdx] = true
+	a.data[idx] = value
+	a.valid[idx] = true
 }

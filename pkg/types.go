@@ -71,12 +71,9 @@ type Wavefront struct { // since wavefronts store diag distance, they should nev
 // NewWavefront: returns a new wavefront with size accomodating lo and hi (inclusive)
 func NewWavefront(lo int, hi int) *Wavefront {
 	a := &Wavefront{}
-
 	a.lohi = PackWavefrontLoHi(lo, hi)
 	size := hi - lo
-
-	newData := make([]WavefrontValue, size+1)
-	a.data = newData
+	a.data = make([]WavefrontValue, size+1)
 
 	return a
 }

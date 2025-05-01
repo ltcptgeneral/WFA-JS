@@ -63,18 +63,14 @@ func SafeArgMax[T constraints.Integer](valids []bool, values []T) (bool, int) {
 	hasValid := false
 	maxIndex := 0
 	maxValue := math.MinInt
-	for i := 0; i < len(valids); i++ {
+	for i := range valids {
 		if valids[i] && int(values[i]) > maxValue {
 			hasValid = true
 			maxIndex = i
 			maxValue = int(values[i])
 		}
 	}
-	if hasValid {
-		return true, maxIndex
-	} else {
-		return false, 0
-	}
+	return hasValid, maxIndex
 }
 
 func SafeArgMin[T constraints.Integer](valids []bool, values []T) (bool, int) {
