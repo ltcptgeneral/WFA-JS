@@ -36,8 +36,8 @@ func randRange[T constraints.Integer](min, max int) T {
 
 func TestWavefrontPacking(t *testing.T) {
 	for range 1000 {
-		val := randRange[uint32](0, 1000)
-		tb := wfa.Traceback(randRange[uint32](0, 7))
+		val := randRange[uint64](0, 1000)
+		tb := wfa.Traceback(randRange[uint64](0, 7))
 		v := wfa.PackWavefrontValue(val, tb)
 
 		valid, gotVal, gotTB := wfa.UnpackWavefrontValue(v)

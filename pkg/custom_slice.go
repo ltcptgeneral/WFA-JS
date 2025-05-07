@@ -19,7 +19,7 @@ func (a *PositiveSlice[T]) Get(idx int) T {
 }
 
 func (a *PositiveSlice[T]) Set(idx int, value T) {
-	if idx < 0 || idx >= len(a.valid) { // idx is outside the slice
+	if idx >= len(a.valid) { // idx is outside the slice
 		// expand data array to 2*idx
 		newData := make([]T, 2*idx+1)
 		copy(newData, a.data)

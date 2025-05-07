@@ -7,6 +7,7 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+// convert an unsigned into to string
 func UIntToString(num uint) string { // num assumed to be positive
 	var builder strings.Builder
 
@@ -25,6 +26,7 @@ func UIntToString(num uint) string { // num assumed to be positive
 	return string(str)
 }
 
+// decode runlength encoded string such as CIGARs
 func RunLengthDecode(encoded string) string {
 	decoded := strings.Builder{}
 	length := len(encoded)
@@ -51,28 +53,17 @@ func RunLengthDecode(encoded string) string {
 	return decoded.String()
 }
 
+// given the min index, return the item in values at that index
 func SafeMin[T constraints.Integer](values []T, idx int) T {
 	return values[idx]
 }
 
+// given the max index, return the item in values at that index
 func SafeMax[T constraints.Integer](values []T, idx int) T {
 	return values[idx]
 }
 
-func SafeArgMax[T constraints.Integer](valids []bool, values []T) (bool, int) {
-	hasValid := false
-	maxIndex := 0
-	maxValue := math.MinInt
-	for i := range valids {
-		if valids[i] && int(values[i]) > maxValue {
-			hasValid = true
-			maxIndex = i
-			maxValue = int(values[i])
-		}
-	}
-	return hasValid, maxIndex
-}
-
+// given array of values and corresponding array of valid flags, find the min of value which is valid or return false if there does not exist any
 func SafeArgMin[T constraints.Integer](valids []bool, values []T) (bool, int) {
 	hasValid := false
 	minIndex := 0
@@ -91,6 +82,22 @@ func SafeArgMin[T constraints.Integer](valids []bool, values []T) (bool, int) {
 	}
 }
 
+// given array of values and corresponding array of valid flags, find the max of value which is valid or return false if there does not exist any
+func SafeArgMax[T constraints.Integer](valids []bool, values []T) (bool, int) {
+	hasValid := false
+	maxIndex := 0
+	maxValue := math.MinInt
+	for i := range valids {
+		if valids[i] && int(values[i]) > maxValue {
+			hasValid = true
+			maxIndex = i
+			maxValue = int(values[i])
+		}
+	}
+	return hasValid, maxIndex
+}
+
+// set the lext lo and hi bounds for wavefronts M, I, D
 func NextLoHi(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent, score int, penalties Penalty) (int, int) {
 	x := penalties.X
 	o := penalties.O
@@ -121,6 +128,7 @@ func NextLoHi(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponen
 	return lo, hi
 }
 
+// set the traceback and diag value for the next I wavefront
 func NextI(M *WavefrontComponent, I *WavefrontComponent, score int, k int, penalties Penalty) {
 	o := penalties.O
 	e := penalties.E
@@ -128,13 +136,14 @@ func NextI(M *WavefrontComponent, I *WavefrontComponent, score int, k int, penal
 	a_ok, a, _ := M.GetVal(score-o-e, k-1)
 	b_ok, b, _ := I.GetVal(score-e, k-1)
 
-	ok, nextITraceback := SafeArgMax([]bool{a_ok, b_ok}, []uint32{a, b})
-	nextIVal := SafeMax([]uint32{a, b}, nextITraceback) + 1 // important that the +1 is here
+	ok, nextITraceback := SafeArgMax([]bool{a_ok, b_ok}, []uint64{a, b})
+	nextIVal := SafeMax([]uint64{a, b}, nextITraceback) + 1 // important that the +1 is here
 	if ok {
 		I.SetVal(score, k, nextIVal, []Traceback{OpenIns, ExtdIns}[nextITraceback])
 	}
 }
 
+// set the traceback and diag value for the next D wavefront
 func NextD(M *WavefrontComponent, D *WavefrontComponent, score int, k int, penalties Penalty) {
 	o := penalties.O
 	e := penalties.E
@@ -142,13 +151,14 @@ func NextD(M *WavefrontComponent, D *WavefrontComponent, score int, k int, penal
 	a_ok, a, _ := M.GetVal(score-o-e, k+1)
 	b_ok, b, _ := D.GetVal(score-e, k+1)
 
-	ok, nextDTraceback := SafeArgMax([]bool{a_ok, b_ok}, []uint32{a, b})
-	nextDVal := SafeMax([]uint32{a, b}, nextDTraceback)
+	ok, nextDTraceback := SafeArgMax([]bool{a_ok, b_ok}, []uint64{a, b})
+	nextDVal := SafeMax([]uint64{a, b}, nextDTraceback)
 	if ok {
 		D.SetVal(score, k, nextDVal, []Traceback{OpenDel, ExtdDel}[nextDTraceback])
 	}
 }
 
+// set the traceback and diag value for the next M wavefront
 func NextM(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent, score int, k int, penalties Penalty) {
 	x := penalties.X
 
@@ -157,8 +167,8 @@ func NextM(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent, 
 	b_ok, b, _ := I.GetVal(score, k)
 	c_ok, c, _ := D.GetVal(score, k)
 
-	ok, nextMTraceback := SafeArgMax([]bool{a_ok, b_ok, c_ok}, []uint32{a, b, c})
-	nextMVal := SafeMax([]uint32{a, b, c}, nextMTraceback)
+	ok, nextMTraceback := SafeArgMax([]bool{a_ok, b_ok, c_ok}, []uint64{a, b, c})
+	nextMVal := SafeMax([]uint64{a, b, c}, nextMTraceback)
 	if ok {
 		M.SetVal(score, k, nextMVal, []Traceback{Sub, Ins, Del}[nextMTraceback])
 	}

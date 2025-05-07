@@ -40,25 +40,22 @@ func UnpackWavefrontLoHi(lohi WavefrontLoHi) (int, int) {
 	return loBM, hiBM
 }
 
-// bitpacked wavefront values with 1 valid bit, 3 traceback bits, and 28 bits for the diag distance
-// technically this restricts to alignments with less than 268 million characters but that should be sufficient for most cases
-type WavefrontValue uint32
-
-// TODO: add 64 bit packed value in case more than 268 million characters are needed
+// bitpacked wavefront values with 1 valid bit, 3 traceback bits, and 60 bits for the diag distance
+type WavefrontValue uint64
 
 // PackWavefrontValue: packs a diag value and traceback into a WavefrontValue
-func PackWavefrontValue(value uint32, traceback Traceback) WavefrontValue {
-	validBM := uint32(0x8000_0000)
-	tracebackBM := uint32(traceback&0x0000_0007) << 28
-	valueBM := value & 0x0FFF_FFFF
+func PackWavefrontValue(value uint64, traceback Traceback) WavefrontValue {
+	validBM := uint64(0x8000_0000_0000_0000)
+	tracebackBM := uint64(traceback&0x0000_0007) << 60
+	valueBM := uint64(value) & 0x0FFF_FFFF_FFFF_FFFF
 	return WavefrontValue(validBM | tracebackBM | valueBM)
 }
 
 // UnpackWavefrontValue: opens a WavefrontValue into a valid bool, diag value and traceback
-func UnpackWavefrontValue(wfv WavefrontValue) (bool, uint32, Traceback) {
-	validBM := wfv&0x8000_0000 != 0
-	tracebackBM := uint8(wfv & 0x7000_0000 >> 28)
-	valueBM := uint32(wfv & 0x0FFF_FFFF)
+func UnpackWavefrontValue(wfv WavefrontValue) (bool, uint64, Traceback) {
+	validBM := wfv&0x8000_0000_0000_0000 != 0
+	tracebackBM := uint8(wfv & 0x7000_0000_0000_0000 >> 60)
+	valueBM := uint64(wfv & 0x0000_0000_FFFF_FFFF)
 	return validBM, valueBM, Traceback(tracebackBM)
 }
 
@@ -131,12 +128,12 @@ func NewWavefrontComponent() *WavefrontComponent {
 }
 
 // GetVal: get value for wavefront=score, diag=k => returns ok, value, traceback
-func (w *WavefrontComponent) GetVal(score int, k int) (bool, uint32, Traceback) {
+func (w *WavefrontComponent) GetVal(score int, k int) (bool, uint64, Traceback) {
 	return UnpackWavefrontValue(w.W.Get(score).Get(k))
 }
 
 // SetVal: set value, traceback for wavefront=score, diag=k
-func (w *WavefrontComponent) SetVal(score int, k int, val uint32, tb Traceback) {
+func (w *WavefrontComponent) SetVal(score int, k int, val uint64, tb Traceback) {
 	w.W.Get(score).Set(k, PackWavefrontValue(val, tb))
 }
 

@@ -4,11 +4,12 @@ import (
 	"strings"
 )
 
+// WFAlign takes strings s1, s2, penalties, and returns the score and CIGAR if doCIGAR is true
 func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 	n := len(s1)
 	m := len(s2)
-	A_k := m - n
-	A_offset := uint32(m)
+	A_k := m - n          // diagonal where both sequences end
+	A_offset := uint64(m) // offset along a_k diagonal corresponding to end
 	score := 0
 	M := NewWavefrontComponent()
 	M.SetLoHi(0, 0, 0)
@@ -19,7 +20,7 @@ func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 	for {
 		WFExtend(M, s1, n, s2, m, score)
 		ok, val, _ := M.GetVal(score, A_k)
-		if ok && val >= A_offset {
+		if ok && val >= A_offset { // exit when M_(s,a_k) >= A_offset, ie the wavefront has reached the end
 			break
 		}
 		score = score + 1
@@ -27,7 +28,7 @@ func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 	}
 
 	CIGAR := ""
-	if doCIGAR {
+	if doCIGAR { // if doCIGAR, then perform backtrace, otherwise just return the score
 		CIGAR = WFBacktrace(M, I, D, score, penalties, A_k, A_offset, s1, s2)
 	}
 
@@ -39,23 +40,24 @@ func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 
 func WFExtend(M *WavefrontComponent, s1 string, n int, s2 string, m int, score int) {
 	_, lo, hi := M.GetLoHi(score)
-	for k := lo; k <= hi; k++ {
+	for k := lo; k <= hi; k++ { // for each diagonal in current wavefront
 		// v = M[score][k] - k
 		// h = M[score][k]
-		ok, hu, _ := M.GetVal(score, k)
-		h := int(hu)
-		v := h - k
-
-		// exit early if v or h are invalid
+		ok, uh, tb := M.GetVal(score, k)
+		// exit early if M_(s,l) is invalid
 		if !ok {
 			continue
 		}
-		for v < n && h < m && s1[v] == s2[h] {
-			_, val, tb := M.GetVal(score, k)
-			M.SetVal(score, k, val+1, tb)
+		h := int(uh)
+		v := h - k
+		// in the paper, we do v++, h++, M_(s,k)++
+		// however, note that h = M_(s,k) so instead we just do v++, h++ and set M_(s,k) at the end
+		// this saves a some memory reads and writes
+		for v < n && h < m && s1[v] == s2[h] { // extend diagonal for the next set of matches
 			v++
 			h++
 		}
+		M.SetVal(score, k, uint64(h), tb)
 	}
 }
 
@@ -63,14 +65,14 @@ func WFNext(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent,
 	// get this score's lo, hi
 	lo, hi := NextLoHi(M, I, D, score, penalties)
 
-	for k := lo; k <= hi; k++ {
+	for k := lo; k <= hi; k++ { // for each diagonal, extend the matrices for the next wavefronts
 		NextI(M, I, score, k, penalties)
 		NextD(M, D, score, k, penalties)
 		NextM(M, I, D, score, k, penalties)
 	}
 }
 
-func WFBacktrace(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent, score int, penalties Penalty, A_k int, A_offset uint32, s1 string, s2 string) string {
+func WFBacktrace(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontComponent, score int, penalties Penalty, A_k int, A_offset uint64, s1 string, s2 string) string {
 	x := penalties.X
 	o := penalties.O
 	e := penalties.E
