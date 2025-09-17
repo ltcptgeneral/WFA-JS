@@ -1,10 +1,10 @@
 module wfa
 
-go 1.23.6
+go 1.25.1
 
 require (
 	github.com/schollz/progressbar/v3 v3.17.1
-	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
+	golang.org/x/exp v0.0.0-20250911091902-df9299821621
 )
 
 require (
