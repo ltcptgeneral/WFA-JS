@@ -1,24 +1,18 @@
 package wfa
 
-import (
-	"math"
-	"strings"
-
-	"golang.org/x/exp/constraints"
-)
+const MaxInt = int(^uint(0) >> 1)
+const MinInt = -MaxInt - 1
 
 // convert an unsigned into to string
 func UIntToString(num uint) string { // num assumed to be positive
-	var builder strings.Builder
+	str := []rune{}
 
 	for num > 0 {
 		digit := num % 10
-		builder.WriteRune(rune('0' + digit))
+		str = append(str, rune('0'+digit))
 		num /= 10
 	}
 
-	// Reverse the string as we built it in reverse order
-	str := []rune(builder.String())
 	for i, j := 0, len(str)-1; i < j; i, j = i+1, j-1 {
 		str[i], str[j] = str[j], str[i]
 	}
@@ -28,7 +22,7 @@ func UIntToString(num uint) string { // num assumed to be positive
 
 // decode runlength encoded string such as CIGARs
 func RunLengthDecode(encoded string) string {
-	decoded := strings.Builder{}
+	decoded := []rune{}
 	length := len(encoded)
 	i := 0
 
@@ -44,30 +38,30 @@ func RunLengthDecode(encoded string) string {
 		if i < length {
 			char := encoded[i]
 			for j := 0; j < runLength; j++ {
-				decoded.WriteByte(char)
+				decoded = append(decoded, rune(char))
 			}
 			i++ // Move past the character
 		}
 	}
 
-	return decoded.String()
+	return string(decoded)
 }
 
 // given the min index, return the item in values at that index
-func SafeMin[T constraints.Integer](values []T, idx int) T {
+func SafeMin[T Integer](values []T, idx int) T {
 	return values[idx]
 }
 
 // given the max index, return the item in values at that index
-func SafeMax[T constraints.Integer](values []T, idx int) T {
+func SafeMax[T Integer](values []T, idx int) T {
 	return values[idx]
 }
 
 // given array of values and corresponding array of valid flags, find the min of value which is valid or return false if there does not exist any
-func SafeArgMin[T constraints.Integer](valids []bool, values []T) (bool, int) {
+func SafeArgMin[T Integer](valids []bool, values []T) (bool, int) {
 	hasValid := false
 	minIndex := 0
-	minValue := math.MaxInt
+	minValue := MaxInt
 	for i := 0; i < len(valids); i++ {
 		if valids[i] && int(values[i]) < minValue {
 			hasValid = true
@@ -83,10 +77,10 @@ func SafeArgMin[T constraints.Integer](valids []bool, values []T) (bool, int) {
 }
 
 // given array of values and corresponding array of valid flags, find the max of value which is valid or return false if there does not exist any
-func SafeArgMax[T constraints.Integer](valids []bool, values []T) (bool, int) {
+func SafeArgMax[T Integer](valids []bool, values []T) (bool, int) {
 	hasValid := false
 	maxIndex := 0
-	maxValue := math.MinInt
+	maxValue := MinInt
 	for i := range valids {
 		if valids[i] && int(values[i]) > maxValue {
 			hasValid = true

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="dist/wfa.js" type="module"></script>
+        <script type="module">
+            import wfaInit from "./dist/wfa.js";
+            window.addEventListener("DOMContentLoaded", () => {
+                wfaInit("dist/wfa.wasm");
+                document.querySelector("#submit").addEventListener("click", () => {
+                    a = document.querySelector("#a").value
+                    b = document.querySelector("#b").value
+                    const penalties = {
+                        m: 0,
+                        x: 1,
+                        o: 0,
+                        e: 1
+                    };
+                    const { score, CIGAR } = global.wfAlign(a, b, penalties, true);
+                    const alignment = global.DecodeCIGAR(CIGAR);
+                    document.querySelector("#result").innerText = `${score}, ${CIGAR}, ${alignment}`;
+                })
+            });            
+        </script>
+    </head>
+    <body>
+        <label>A: </label><input id="a">
+        <label>B: </label><input id="b">
+        <button id="submit">Submit</button>
+        <p><span>Result: </span><span id="result"></span></p>
+    </body>
+</html>

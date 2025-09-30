@@ -1,9 +1,5 @@
 package wfa
 
-import (
-	"strings"
-)
-
 // WFAlign takes strings s1, s2, penalties, and returns the score and CIGAR if doCIGAR is true
 func WFAlign(s1 string, s2 string, penalties Penalty, doCIGAR bool) Result {
 	n := len(s1)
@@ -189,11 +185,11 @@ func WFBacktrace(M *WavefrontComponent, I *WavefrontComponent, D *WavefrontCompo
 		}
 	}
 
-	CIGAR := strings.Builder{}
+	CIGAR := ""
 	for i := len(Ops) - 1; i > 0; i-- {
-		CIGAR.WriteString(UIntToString(Counts[i]))
-		CIGAR.WriteRune(Ops[i])
+		CIGAR += UIntToString(Counts[i])
+		CIGAR += string(Ops[i])
 	}
 
-	return CIGAR.String()
+	return CIGAR
 }
