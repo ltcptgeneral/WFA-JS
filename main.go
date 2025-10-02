@@ -7,8 +7,8 @@ import (
 
 func main() {
 	c := make(chan bool)
-	js.Global().Set("wfAlign", js.FuncOf(wfAlign))
-	js.Global().Set("DecodeCIGAR", js.FuncOf(DecodeCIGAR))
+	js.Global().Get("wfa").Set("wfAlign", js.FuncOf(wfAlign))
+	js.Global().Get("wfa").Set("DecodeCIGAR", js.FuncOf(DecodeCIGAR))
 	<-c
 }
 
