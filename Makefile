@@ -27,5 +27,4 @@ test:
 	@rm -f test.test
 
 dev-init:
-	apt install minify
 	go get -t wfa/test
