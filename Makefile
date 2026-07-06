@@ -2,7 +2,7 @@
 
 build: clean
 	@echo "======================== Building Binary ======================="
-	minify wfa.js > dist/wfa.js
+	cp wfa.js dist/wfa.js
 	GOOS=js GOARCH=wasm CGO_ENABLED=0 tinygo build -panic=trap -no-debug -opt=s -target=wasm -o dist/wfa.wasm .
 
 clean:
