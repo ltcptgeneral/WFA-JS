@@ -4,7 +4,7 @@ build: clean
 	@echo "======================== Building Binary ======================="
 	mkdir -p dist
 	cp wfa.js dist/wfa.js
-	GOOS=js GOARCH=wasm CGO_ENABLED=0 tinygo build -panic=trap -no-debug -opt=s -target=wasm -o dist/wfa.wasm .
+	GOOS=js GOARCH=wasm CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o dist/wfa.wasm .
 
 clean:
 	@echo "======================== Cleaning Project ======================"
