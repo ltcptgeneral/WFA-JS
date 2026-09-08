@@ -5,11 +5,12 @@ build: clean
 	mkdir -p dist
 	cp wfa.js dist/wfa.js
 	GOOS=js GOARCH=wasm CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o dist/wfa.wasm .
+	gzip dist/wfa.wasm
 
 clean:
 	@echo "======================== Cleaning Project ======================"
 	go clean
-	rm -f dist/wfa.wasm dist/wfa.js cover.prof cpu.prof mem.prof test.test
+	rm -f dist/* cover.prof cpu.prof mem.prof test.test
 
 test:
 	@echo "======================== Running Tests ========================="
