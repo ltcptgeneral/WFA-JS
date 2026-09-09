@@ -5,7 +5,7 @@ build: clean
 	mkdir -p dist
 	cp wfa.js dist/wfa.js
 	GOOS=js GOARCH=wasm CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o dist/wfa.wasm .
-	gzip dist/wfa.wasm
+	gzip -n -9 dist/wfa.wasm
 
 clean:
 	@echo "======================== Cleaning Project ======================"
