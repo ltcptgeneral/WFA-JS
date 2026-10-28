@@ -4,11 +4,11 @@
         <script src="wfa.js" type="module"></script>
         <script type="module">
             import wfaInit from "./wfa.js";
-            wfaInit("dist/wfa.wasm.gz");
+            const wfa = await wfaInit("dist/wfa.wasm.gz");
             window.addEventListener("DOMContentLoaded", () => {
-                document.querySelector("#submit").addEventListener("click", () => {
-                    a = document.querySelector("#a").value
-                    b = document.querySelector("#b").value
+                document.querySelector("#submit").addEventListener("click", async () => {
+                    const a = document.querySelector("#a").value
+                    const b = document.querySelector("#b").value
                     const penalties = {
                         m: 0,
                         x: 1,

@@ -1,110 +1,62 @@
 package main
 
 import (
-	"syscall/js"
+	"unsafe"
 	wfa "wfa/pkg"
 )
 
+// inputs from JS to WASM
+var inputs = map[unsafe.Pointer][]byte{}
+
+// output from WASM to JS
+var output string
+
 func main() {
-	c := make(chan bool)
-	js.Global().Get("wfa").Set("wfAlign", js.FuncOf(wfAlign))
-	js.Global().Get("wfa").Set("DecodeCIGAR", js.FuncOf(DecodeCIGAR))
-	<-c
+	select {}
 }
 
-func wfAlign(this js.Value, args []js.Value) interface{} {
-	if len(args) != 4 {
-		resultMap := map[string]interface{}{
-			"ok":    false,
-			"error": "invalid number of args, requires 4: s1, s2, penalties, doCIGAR",
-		}
-		return js.ValueOf(resultMap)
+//go:wasmexport alloc
+func alloc(size uint32) unsafe.Pointer {
+	if size == 0 {
+		size = 1
 	}
+	buf := make([]byte, size)
+	ptr := unsafe.Pointer(&buf[0])
+	inputs[ptr] = buf
+	return ptr
+}
 
-	if args[0].Type() != js.TypeString {
-		resultMap := map[string]interface{}{
-			"ok":    false,
-			"error": "s1 should be a string",
-		}
-		return js.ValueOf(resultMap)
-	}
+//go:wasmexport free
+func free(ptr unsafe.Pointer) {
+	delete(inputs, ptr)
+}
 
-	s1 := args[0].String()
+//go:wasmexport outPtr
+func outPtr() unsafe.Pointer {
+	return unsafe.Pointer(unsafe.StringData(output))
+}
 
-	if args[1].Type() != js.TypeString {
-		resultMap := map[string]interface{}{
-			"ok":    false,
-			"error": "s2 should be a string",
-		}
-		return js.ValueOf(resultMap)
-	}
+//go:wasmexport outLen
+func outLen() uint32 {
+	return uint32(len(output))
+}
 
-	s2 := args[1].String()
-
-	if args[2].Type() != js.TypeObject {
-		resultMap := map[string]interface{}{
-			"ok":    false,
-			"error": "penalties should be a map with key values m, x, o, e",
-		}
-		return js.ValueOf(resultMap)
-	}
-
-	if args[2].Get("m").IsUndefined() || args[2].Get("x").IsUndefined() || args[2].Get("o").IsUndefined() || args[2].Get("e").IsUndefined() {
-		resultMap := map[string]interface{}{
-			"ok":    false,
-			"error": "penalties should be a map with key values m, x, o, e",
-		}
-		return js.ValueOf(resultMap)
-	}
-
-	m := args[2].Get("m").Int()
-	x := args[2].Get("x").Int()
-	o := args[2].Get("o").Int()
-	e := args[2].Get("e").Int()
-
+//go:wasmexport wfAlign
+func wfAlign(s1 string, s2 string, m int32, x int32, o int32, e int32, doCIGAR bool) int32 {
 	penalties := wfa.Penalty{
-		M: m,
-		X: x,
-		O: o,
-		E: e,
+		M: int(m),
+		X: int(x),
+		O: int(o),
+		E: int(e),
 	}
 
-	if args[3].Type() != js.TypeBoolean {
-		resultMap := map[string]interface{}{
-			"ok":    false,
-			"error": "doCIGAR should be a boolean",
-		}
-		return js.ValueOf(resultMap)
-	}
-
-	doCIGAR := args[3].Bool()
-
-	// Call the actual func.
 	result := wfa.WFAlign(s1, s2, penalties, doCIGAR)
-	resultMap := map[string]interface{}{
-		"ok":    true,
-		"score": result.Score,
-		"CIGAR": result.CIGAR,
-		"error": "",
-	}
+	output = result.CIGAR
 
-	return js.ValueOf(resultMap)
+	return int32(result.Score)
 }
 
-func DecodeCIGAR(this js.Value, args []js.Value) interface{} {
-	if len(args) != 1 {
-		println("invalid number of args, requires 1: CIGAR")
-		return nil
-	}
-
-	if args[0].Type() != js.TypeString {
-		println("CIGAR should be a string")
-		return nil
-	}
-
-	CIGAR := args[0].String()
-
-	decoded := wfa.RunLengthDecode(CIGAR)
-
-	return js.ValueOf(decoded)
+//go:wasmexport DecodeCIGAR
+func DecodeCIGAR(CIGAR string) {
+	output = wfa.RunLengthDecode(CIGAR)
 }

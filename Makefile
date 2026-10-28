@@ -3,6 +3,7 @@
 build: clean
 	@echo "======================== Building Binary ======================="
 	mkdir -p dist
+	cp "$(shell go env GOROOT)/lib/wasm/wasm_exec.js" dist/wasm_exec.js
 	cp wfa.js dist/wfa.js
 	GOOS=js GOARCH=wasm CGO_ENABLED=0 go build -ldflags="-s -w" -trimpath -o dist/wfa.wasm .
 	gzip -n -9 dist/wfa.wasm
